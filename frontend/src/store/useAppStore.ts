@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { TimeRange, ChartType } from '@/types/stock'
 
 interface AppState {
-  // Watchlist (guest mode — persisted locally)
+  // Watchlist
   watchlist: string[]
   addToWatchlist: (ticker: string) => void
   removeFromWatchlist: (ticker: string) => void
@@ -19,7 +19,11 @@ interface AppState {
   toggleMA50: () => void
   toggleMA200: () => void
 
-  // UI state
+  // Theme
+  theme: 'dark' | 'light'
+  toggleTheme: () => void
+
+  // UI
   sidebarCollapsed: boolean
   toggleSidebar: () => void
 
@@ -50,6 +54,14 @@ export const useAppStore = create<AppState>()(
       toggleMA50: () => set((s) => ({ showMA50: !s.showMA50 })),
       toggleMA200: () => set((s) => ({ showMA200: !s.showMA200 })),
 
+      theme: 'dark',
+      toggleTheme: () => {
+        const next = get().theme === 'dark' ? 'light' : 'dark'
+        set({ theme: next })
+        document.documentElement.classList.toggle('dark', next === 'dark')
+        document.documentElement.classList.toggle('light', next === 'light')
+      },
+
       sidebarCollapsed: false,
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
@@ -61,6 +73,15 @@ export const useAppStore = create<AppState>()(
         }))
       },
     }),
-    { name: 'stockdash-store' }
+    {
+      name: 'stockdash-store',
+      onRehydrateStorage: () => (state) => {
+        // Apply persisted theme on load
+        if (state) {
+          document.documentElement.classList.toggle('dark', state.theme === 'dark')
+          document.documentElement.classList.toggle('light', state.theme === 'light')
+        }
+      },
+    }
   )
 )

@@ -63,3 +63,68 @@ export function useMarketOverview() {
     refetchInterval: 60_000,
   })
 }
+
+export function useCompare(tickers: string[], range: string) {
+  return useQuery({
+    queryKey: ['compare', tickers.join(','), range],
+    queryFn: () =>
+      api.get('/stocks/compare', { params: { tickers: tickers.join(','), range } }).then(r => r.data),
+    enabled: tickers.length >= 2,
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useMultiQuote(tickers: string[]) {
+  return useQuery({
+    queryKey: ['multi-quote', tickers.join(',')],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        tickers.map(t => api.get(`/stocks/quote/${t}`).then(r => r.data))
+      )
+      return results.map((r, i) => ({
+        ticker: tickers[i],
+        data: r.status === 'fulfilled' ? r.value : null,
+      }))
+    },
+    enabled: tickers.length > 0,
+    refetchInterval: 30_000,
+  })
+}
+
+export function useMultiCandles(tickers: string[], range = '1W') {
+  return useQuery({
+    queryKey: ['multi-candles', tickers.join(','), range],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        tickers.map(t => api.get(`/stocks/candles/${t}`, { params: { range } }).then(r => r.data))
+      )
+      return results.map((r, i) => ({
+        ticker: tickers[i],
+        data: r.status === 'fulfilled' ? r.value : null,
+      }))
+    },
+    enabled: tickers.length > 0,
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useMarketSparklines(tickers: string[]) {
+  return useQuery({
+    queryKey: ['market-sparklines', tickers.join(',')],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        tickers.map(t =>
+          api.get(`/stocks/candles/${t}`, { params: { range: '1W' } }).then(r => r.data)
+        )
+      )
+      const map: Record<string, { close: number }[]> = {}
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled')
+          map[tickers[i]] = r.value.candles ?? []
+      })
+      return map
+    },
+    enabled: tickers.length > 0,
+    staleTime: 5 * 60_000,
+  })
+}

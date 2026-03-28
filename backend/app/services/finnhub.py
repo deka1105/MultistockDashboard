@@ -63,10 +63,7 @@ async def _get(path: str, params: dict | None = None) -> dict:
 # ─── Quote ───────────────────────────────────────────────────────────────────
 
 async def get_quote(ticker: str) -> dict[str, Any]:
-    """
-    Returns real-time quote for a ticker.
-    Fields: c (current), d (change), dp (% change), h (high), l (low), o (open), pc (prev close)
-    """
+    """Real-time quote for a ticker."""
     if USE_MOCK:
         from app.services.mock_data import get_mock_quote
         return get_mock_quote(ticker)
@@ -77,8 +74,6 @@ async def get_quote(ticker: str) -> dict[str, Any]:
         return cached
 
     data = await _get("/quote", params={"symbol": ticker.upper()})
-
-    # Enrich with normalized field names
     result = {
         "ticker": ticker.upper(),
         "price": data.get("c"),
@@ -90,7 +85,6 @@ async def get_quote(ticker: str) -> dict[str, Any]:
         "prev_close": data.get("pc"),
         "timestamp": data.get("t"),
     }
-
     await cache_set(key, result, ttl=settings.cache_ttl_quote)
     return result
 
@@ -98,26 +92,22 @@ async def get_quote(ticker: str) -> dict[str, Any]:
 # ─── Candles (OHLCV) ─────────────────────────────────────────────────────────
 
 RESOLUTION_MAP = {
-    "1D": ("5", 1),       # 5-min bars, 1 day
-    "1W": ("15", 7),      # 15-min bars, 7 days
-    "1M": ("60", 30),     # 1-hour bars, 30 days
-    "3M": ("D", 90),      # daily bars, 90 days
-    "1Y": ("D", 365),     # daily bars, 1 year
-    "5Y": ("W", 1825),    # weekly bars, 5 years
+    "1D": ("5", 1),
+    "1W": ("15", 7),
+    "1M": ("60", 30),
+    "3M": ("D", 90),
+    "1Y": ("D", 365),
+    "5Y": ("W", 1825),
 }
 
 
 async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
-    """
-    Returns OHLCV candle data for a given time range key.
-    range_key: one of 1D, 1W, 1M, 3M, 1Y, 5Y
-    """
+    """OHLCV candle data for a given time range key."""
     if USE_MOCK:
         from app.services.mock_data import get_mock_candles
         return get_mock_candles(ticker, range_key)
 
     resolution, days = RESOLUTION_MAP.get(range_key, ("D", 30))
-
     now = int(datetime.now(timezone.utc).timestamp())
     from_ts = now - (days * 86400)
 
@@ -134,9 +124,8 @@ async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
     })
 
     if data.get("s") == "no_data":
-        return {"ticker": ticker.upper(), "range": range_key, "candles": []}
+        return {"ticker": ticker.upper(), "range": range_key, "resolution": resolution, "candles": []}
 
-    # Normalize to list of {date, open, high, low, close, volume}
     timestamps = data.get("t", [])
     candles = [
         {
@@ -157,7 +146,6 @@ async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
         "resolution": resolution,
         "candles": candles,
     }
-
     await cache_set(key, result, ttl=settings.cache_ttl_candles)
     return result
 
@@ -165,10 +153,8 @@ async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
 # ─── Symbol Search ───────────────────────────────────────────────────────────
 
 async def search_symbols(query: str) -> list[dict]:
-    """
-    Returns list of matching ticker symbols and company names.
-    """
-    if not query or len(query) < 1:
+    """Autocomplete ticker symbol search."""
+    if not query:
         return []
 
     if USE_MOCK:
@@ -188,20 +174,17 @@ async def search_symbols(query: str) -> list[dict]:
             "type": item.get("type"),
             "exchange": item.get("primaryExchange"),
         }
-        for item in data.get("result", [])[:10]  # cap at 10 results
-        if item.get("type") in ("Common Stock", "ETP", "ADR")  # filter noise
+        for item in data.get("result", [])[:10]
+        if item.get("type") in ("Common Stock", "ETP", "ADR")
     ]
-
-    await cache_set(key, results, ttl=300)  # 5-min cache on search
+    await cache_set(key, results, ttl=300)
     return results
 
 
 # ─── Company News ─────────────────────────────────────────────────────────────
 
 async def get_company_news(ticker: str, days_back: int = 7) -> list[dict]:
-    """
-    Returns recent news articles for a ticker.
-    """
+    """Recent news articles for a ticker."""
     if USE_MOCK:
         from app.services.mock_data import get_mock_news
         return get_mock_news(ticker)
@@ -212,7 +195,7 @@ async def get_company_news(ticker: str, days_back: int = 7) -> list[dict]:
         return cached
 
     now = datetime.now(timezone.utc)
-    from_date = now.replace(hour=0, minute=0, second=0) 
+    from_date = now.replace(hour=0, minute=0, second=0)
     from_str = (from_date.replace(day=max(1, from_date.day - days_back))).strftime("%Y-%m-%d")
     to_str = now.strftime("%Y-%m-%d")
 
@@ -236,23 +219,24 @@ async def get_company_news(ticker: str, days_back: int = 7) -> list[dict]:
             ).isoformat(),
         }
         for item in (data if isinstance(data, list) else [])
-    ][:30]  # cap at 30 articles
+    ][:30]
 
     await cache_set(key, articles, ttl=settings.cache_ttl_news)
     return articles
 
 
 def _map_sentiment(raw: str | None) -> str:
-    mapping = {"positive": "positive", "negative": "negative", "neutral": "neutral"}
-    return mapping.get((raw or "").lower(), "neutral")
+    return {"positive": "positive", "negative": "negative"}.get((raw or "").lower(), "neutral")
 
 
 # ─── Company Profile ──────────────────────────────────────────────────────────
 
 async def get_company_profile(ticker: str) -> dict[str, Any]:
-    """
-    Returns company metadata: name, sector, market cap, logo, etc.
-    """
+    """Company metadata: name, sector, market cap, logo, etc."""
+    if USE_MOCK:
+        from app.services.mock_data import get_mock_profile
+        return get_mock_profile(ticker)
+
     data = await _get("/stock/profile2", params={"symbol": ticker.upper()})
     return {
         "ticker": ticker.upper(),
@@ -271,6 +255,11 @@ async def get_company_profile(ticker: str) -> dict[str, Any]:
 # ─── Basic Financials (52-week range) ────────────────────────────────────────
 
 async def get_basic_financials(ticker: str) -> dict[str, Any]:
+    """Key financial metrics: 52-week range, P/E, beta, etc."""
+    if USE_MOCK:
+        from app.services.mock_data import get_mock_financials
+        return get_mock_financials(ticker)
+
     data = await _get("/stock/metric", params={
         "symbol": ticker.upper(),
         "metric": "all",

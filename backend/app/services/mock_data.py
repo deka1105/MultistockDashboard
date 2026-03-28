@@ -123,3 +123,53 @@ def get_mock_news(ticker: str) -> list[dict]:
         }
         for i in range(5)
     ]
+
+
+def get_mock_profile(ticker: str) -> dict:
+    profiles = {
+        "AAPL":  ("Apple Inc",              "Technology",         2_900_000, "NASDAQ", "US", "USD", "1980-12-12", "https://www.apple.com"),
+        "MSFT":  ("Microsoft Corporation",  "Technology",         3_100_000, "NASDAQ", "US", "USD", "1986-03-13", "https://www.microsoft.com"),
+        "NVDA":  ("NVIDIA Corporation",     "Technology",         2_200_000, "NASDAQ", "US", "USD", "1999-01-22", "https://www.nvidia.com"),
+        "AMZN":  ("Amazon.com Inc",         "Consumer Cyclical",  1_900_000, "NASDAQ", "US", "USD", "1997-05-15", "https://www.amazon.com"),
+        "GOOGL": ("Alphabet Inc",           "Technology",         2_000_000, "NASDAQ", "US", "USD", "2004-08-19", "https://www.alphabet.com"),
+        "META":  ("Meta Platforms Inc",     "Technology",         1_300_000, "NASDAQ", "US", "USD", "2012-05-18", "https://www.meta.com"),
+        "TSLA":  ("Tesla Inc",              "Consumer Cyclical",    560_000, "NASDAQ", "US", "USD", "2010-06-29", "https://www.tesla.com"),
+        "JPM":   ("JPMorgan Chase & Co",    "Financial Services",   570_000, "NYSE",   "US", "USD", "1969-03-05", "https://www.jpmorganchase.com"),
+        "AMD":   ("Advanced Micro Devices", "Technology",           270_000, "NASDAQ", "US", "USD", "1979-09-27", "https://www.amd.com"),
+        "NFLX":  ("Netflix Inc",            "Communication",        290_000, "NASDAQ", "US", "USD", "2002-05-23", "https://www.netflix.com"),
+    }
+    t = ticker.upper()
+    name, sector, mktcap, exchange, country, currency, ipo, website = profiles.get(
+        t, (f"{t} Corp", "Technology", 100_000, "NASDAQ", "US", "USD", "2000-01-01", None)
+    )
+    return {
+        "ticker": t,
+        "company_name": name,
+        "sector": sector,
+        "market_cap": mktcap,
+        "logo_url": None,
+        "exchange": exchange,
+        "ipo_date": ipo,
+        "website": website,
+        "country": country,
+        "currency": currency,
+    }
+
+
+def get_mock_financials(ticker: str) -> dict:
+    import random
+    base_prices = {
+        "AAPL": 189.5, "MSFT": 415.2, "NVDA": 875.3, "TSLA": 177.8,
+        "AMZN": 188.9, "GOOGL": 175.4, "META": 512.6, "JPM": 198.3,
+    }
+    price = base_prices.get(ticker.upper(), 150.0)
+    return {
+        "ticker": ticker.upper(),
+        "52_week_high": round(price * random.uniform(1.05, 1.40), 2),
+        "52_week_low":  round(price * random.uniform(0.60, 0.90), 2),
+        "beta":         round(random.uniform(0.7, 2.0), 2),
+        "pe_ratio":     round(random.uniform(15, 45), 1),
+        "eps":          round(random.uniform(2, 15), 2),
+        "revenue_per_share": round(random.uniform(20, 80), 2),
+        "dividend_yield":    round(random.uniform(0, 2.5), 2),
+    }

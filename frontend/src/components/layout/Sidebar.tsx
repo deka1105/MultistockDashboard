@@ -2,14 +2,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, GitCompare, Star, BarChart3, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useStockQuote } from '@/hooks/useStockData'
-import { formatPrice, formatPct, getPriceClass } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { formatPrice, formatPct, getPriceClass, cn } from '@/lib/utils'
 
 const NAV = [
-  { to: '/dashboard/AAPL', label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/compare',         label: 'Compare',    icon: GitCompare },
-  { to: '/watchlist',       label: 'Watchlist',  icon: Star },
-  { to: '/market',          label: 'Market',     icon: BarChart3 },
+  { to: '/dashboard/AAPL', label: 'Dashboard',  icon: LayoutDashboard, exact: false },
+  { to: '/compare',         label: 'Compare',    icon: GitCompare,      exact: true },
+  { to: '/watchlist',       label: 'Watchlist',  icon: Star,            exact: true },
+  { to: '/market',          label: 'Market',     icon: BarChart3,       exact: true },
 ]
 
 function WatchlistItem({ ticker }: { ticker: string }) {
@@ -26,12 +25,8 @@ function WatchlistItem({ ticker }: { ticker: string }) {
         {ticker}
       </span>
       <div className="text-right">
-        <div className="font-mono text-xs text-text-primary">
-          {formatPrice(data?.price)}
-        </div>
-        <div className={cn('font-mono text-[10px]', pctClass)}>
-          {formatPct(data?.change_pct)}
-        </div>
+        <div className="font-mono text-xs text-text-primary">{formatPrice(data?.price)}</div>
+        <div className={cn('font-mono text-[10px]', pctClass)}>{formatPct(data?.change_pct)}</div>
       </div>
     </button>
   )
@@ -50,16 +45,12 @@ export default function Sidebar() {
         {!sidebarCollapsed && (
           <div className="flex items-center gap-2">
             <TrendingUp size={18} className="text-accent-cyan" />
-            <span className="font-display font-bold text-base text-text-primary tracking-tight">
-              StockDash
-            </span>
+            <span className="font-display font-bold text-base text-text-primary tracking-tight">StockDash</span>
           </div>
         )}
         {sidebarCollapsed && <TrendingUp size={18} className="text-accent-cyan mx-auto" />}
-        <button
-          onClick={toggleSidebar}
-          className="p-1 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors ml-auto"
-        >
+        <button onClick={toggleSidebar}
+          className="p-1 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors ml-auto">
           {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
@@ -67,12 +58,8 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex flex-col gap-1 px-2 py-3">
         {NAV.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              cn('sidebar-item', isActive && 'sidebar-item-active')
-            }
+          <NavLink key={to} to={to}
+            className={({ isActive }) => cn('sidebar-item', isActive && 'sidebar-item-active')}
           >
             <Icon size={16} className="shrink-0" />
             {!sidebarCollapsed && <span>{label}</span>}
@@ -85,7 +72,7 @@ export default function Sidebar() {
         <div className="mt-auto border-t border-bg-border px-3 py-3">
           <p className="stat-label mb-2 px-1">Watchlist</p>
           <div className="flex flex-col gap-0.5">
-            {watchlist.slice(0, 6).map((ticker) => (
+            {watchlist.slice(0, 6).map(ticker => (
               <WatchlistItem key={ticker} ticker={ticker} />
             ))}
           </div>

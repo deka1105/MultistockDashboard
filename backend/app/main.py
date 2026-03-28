@@ -92,3 +92,7 @@ app.include_router(stocks.router, prefix=settings.api_v1_prefix)
 @app.get("/")
 async def root():
     return {"message": "StockDash API", "docs": "/docs", "version": "1.0.0"}
+
+# Phase 3 routers
+from app.routers import watchlist as watchlist_router
+app.include_router(watchlist_router.router, prefix=settings.api_v1_prefix)
