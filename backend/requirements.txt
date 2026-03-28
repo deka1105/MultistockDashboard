@@ -1,0 +1,44 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# Database
+sqlalchemy[asyncio]==2.0.30
+asyncpg==0.29.0
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Redis & caching
+redis==5.0.4
+# NOTE: do NOT add aioredis — it conflicts with redis 5.x
+# Use redis.asyncio (built into the redis package) instead
+
+# Task queue
+celery==5.4.0
+flower==2.0.1  # Celery monitoring UI
+
+# HTTP client
+httpx==0.27.0
+aiohttp==3.9.5
+
+# Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.9
+
+# Validation & settings
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# Rate limiting
+slowapi==0.1.9
+
+# Env
+python-dotenv==1.0.1
+
+# Email
+fastapi-mail==1.4.1
+
+# Utilities
+tenacity==8.3.0    # Retry logic with backoff
+orjson==3.10.3     # Fast JSON serialization
