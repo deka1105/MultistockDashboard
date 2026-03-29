@@ -13,6 +13,9 @@ redis==5.0.4
 # NOTE: do NOT add aioredis — it conflicts with redis 5.x
 # Use redis.asyncio (built into the redis package) instead
 
+# WebSocket
+websockets==12.0
+
 # Task queue
 celery==5.4.0
 flower==2.0.1  # Celery monitoring UI
@@ -42,3 +45,12 @@ fastapi-mail==1.4.1
 # Utilities
 tenacity==8.3.0    # Retry logic with backoff
 orjson==3.10.3     # Fast JSON serialization
+
+# Phase 4 — Sentiment & news
+praw==7.7.1          # Reddit API
+newsapi-python==0.2.7
+httpx[http2]==0.27.0
+
+# Phase 4 — NLP
+transformers==4.41.2
+torch==2.3.1         # CPU-only inference

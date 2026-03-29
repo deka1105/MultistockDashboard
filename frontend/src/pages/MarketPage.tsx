@@ -5,27 +5,23 @@ import {
   Star, StarOff, TrendingUp, TrendingDown,
 } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer } from 'recharts'
-import { useMarketOverview } from '@/hooks/useStockData'
-import { useAppStore } from '@/store/useAppStore'
+import { useMarketOverview, useBackendWatchlists, useQuickWatchlist } from '@/hooks/useStockData'
 import { formatPrice, formatPct, formatMarketCap, getPriceClass, cn } from '@/lib/utils'
 import { Skeleton } from '@/components/common/Skeleton'
 import { ErrorCard } from '@/components/common/ErrorBoundary'
 import api from '@/lib/api'
 
-type SortKey = 'ticker' | 'price' | 'change_pct' | 'market_cap'
+type SortKey = 'ticker' | 'price' | 'change_pct' | 'market_cap' | 'volume'
 type SortDir  = 'asc' | 'desc'
 
 const SECTORS = [
-  'All', 'Technology', 'Financial Services', 'Consumer Cyclical',
-  'Communication', 'Healthcare', 'Energy', 'Industrials',
+  'All','Technology','Financial Services','Consumer Cyclical',
+  'Communication','Healthcare','Energy','Industrials',
 ]
-
-// ─── Sparkline — fetched individually on demand ───────────────────────────────
 
 function Sparkline({ ticker, isUp }: { ticker: string; isUp: boolean }) {
   const [candles, setCandles] = useState<{ close: number }[]>([])
   const fetched = useRef(false)
-
   useEffect(() => {
     if (fetched.current) return
     fetched.current = true
@@ -33,27 +29,19 @@ function Sparkline({ ticker, isUp }: { ticker: string; isUp: boolean }) {
       .then(r => setCandles(r.data?.candles ?? []))
       .catch(() => {})
   }, [ticker])
-
-  if (candles.length < 2) {
+  if (candles.length < 2)
     return <div className="w-16 h-8 rounded bg-bg-hover animate-pulse" />
-  }
-
   return (
     <div className="w-16 h-8">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={candles}>
-          <Line
-            type="monotone" dataKey="close"
-            stroke={isUp ? '#00ff88' : '#ff3b5c'}
-            strokeWidth={1.5} dot={false}
-          />
+          <Line type="monotone" dataKey="close"
+            stroke={isUp ? '#00ff88' : '#ff3b5c'} strokeWidth={1.5} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
   )
 }
-
-// ─── Sort icon ────────────────────────────────────────────────────────────────
 
 function SortIcon({ col, current, dir }: { col: SortKey; current: SortKey; dir: SortDir }) {
   if (col !== current) return <ArrowUpDown size={11} className="opacity-30" />
@@ -62,12 +50,22 @@ function SortIcon({ col, current, dir }: { col: SortKey; current: SortKey; dir: 
     : <ArrowDown size={11} className="text-accent-cyan" />
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function MarketPage() {
   const navigate  = useNavigate()
   const { data, isLoading, error, refetch } = useMarketOverview()
-  const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useAppStore()
+
+  // Backend-driven watchlist state
+  const { data: watchlists } = useBackendWatchlists()
+  const { add: addToWatchlist, remove: removeFromWatchlist } = useQuickWatchlist()
+
+  // Derive set of tickers in any watchlist
+  const watchlistTickers = useMemo(() => {
+    const set = new Set<string>()
+    ;(watchlists ?? []).forEach((wl: any) =>
+      (wl.tickers ?? []).forEach((t: string) => set.add(t))
+    )
+    return set
+  }, [watchlists])
 
   const [sortKey, setSortKey] = useState<SortKey>('market_cap')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -82,8 +80,7 @@ export default function MarketPage() {
   const rows = useMemo(() => {
     const items: any[] = data?.items ?? []
     let filtered = items
-    if (sector !== 'All')
-      filtered = filtered.filter(r => r.sector === sector)
+    if (sector !== 'All') filtered = filtered.filter(r => r.sector === sector)
     if (search) {
       const q = search.toUpperCase()
       filtered = filtered.filter(r =>
@@ -99,10 +96,8 @@ export default function MarketPage() {
   }, [data, sector, search, sortKey, sortDir])
 
   const Th = ({ label, col }: { label: string; col: SortKey }) => (
-    <th
-      onClick={() => handleSort(col)}
-      className="text-left py-2.5 px-3 text-[10px] uppercase tracking-wider text-text-muted font-medium cursor-pointer hover:text-text-primary transition-colors select-none whitespace-nowrap"
-    >
+    <th onClick={() => handleSort(col)}
+      className="text-left py-2.5 px-3 text-[10px] uppercase tracking-wider text-text-muted font-medium cursor-pointer hover:text-text-primary transition-colors select-none whitespace-nowrap">
       <span className="flex items-center gap-1.5">
         {label} <SortIcon col={col} current={sortKey} dir={sortDir} />
       </span>
@@ -111,8 +106,6 @@ export default function MarketPage() {
 
   return (
     <div className="space-y-4 animate-slide-up max-w-screen-2xl mx-auto">
-
-      {/* Header */}
       <div className="flex items-center gap-2">
         <BarChart3 size={18} className="text-accent-cyan" />
         <h1 className="font-display font-bold text-xl text-text-primary">Market Overview</h1>
@@ -123,27 +116,17 @@ export default function MarketPage() {
         )}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search ticker or company…"
-          className="input-base max-w-56"
-        />
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search ticker or company…" className="input-base max-w-56" />
         <div className="flex items-center gap-1 flex-wrap">
           {SECTORS.map(s => (
-            <button
-              key={s} onClick={() => setSector(s)}
-              className={s === sector ? 'range-btn-active' : 'range-btn'}
-            >
-              {s}
-            </button>
+            <button key={s} onClick={() => setSector(s)}
+              className={s === sector ? 'range-btn-active' : 'range-btn'}>{s}</button>
           ))}
         </div>
       </div>
 
-      {/* Table */}
       {isLoading ? (
         <div className="card p-4 space-y-2">
           {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -174,61 +157,39 @@ export default function MarketPage() {
               </thead>
               <tbody>
                 {rows.map((row: any) => {
-                  const inWl = isInWatchlist(row.ticker)
+                  const inWl = watchlistTickers.has(row.ticker)
                   const isUp = (row.change_pct ?? 0) >= 0
                   return (
-                    <tr
-                      key={row.ticker}
+                    <tr key={row.ticker}
                       onClick={() => navigate(`/dashboard/${row.ticker}`)}
-                      className="border-b border-bg-border/40 last:border-0 hover:bg-bg-hover cursor-pointer transition-colors"
-                    >
-                      {/* Star */}
+                      className="border-b border-bg-border/40 last:border-0 hover:bg-bg-hover cursor-pointer transition-colors">
                       <td className="pl-3" onClick={e => e.stopPropagation()}>
                         <button
-                          onClick={() => inWl ? removeFromWatchlist(row.ticker) : addToWatchlist(row.ticker)}
-                          className="p-1 rounded text-text-muted hover:text-accent-amber transition-colors"
-                        >
+                          onClick={() =>
+                            inWl
+                              ? removeFromWatchlist.mutate(row.ticker)
+                              : addToWatchlist.mutate(row.ticker)
+                          }
+                          disabled={addToWatchlist.isPending || removeFromWatchlist.isPending}
+                          className="p-1 rounded text-text-muted hover:text-accent-amber transition-colors">
                           {inWl
                             ? <Star size={13} fill="currentColor" className="text-accent-amber" />
-                            : <StarOff size={13} />
-                          }
+                            : <StarOff size={13} />}
                         </button>
                       </td>
-
-                      {/* Ticker */}
-                      <td className="py-3 px-3 font-mono font-bold text-text-primary">
-                        {row.ticker}
-                      </td>
-
-                      {/* Company */}
-                      <td className="py-3 px-3 text-text-secondary text-xs max-w-36 truncate">
-                        {row.company_name ?? '—'}
-                      </td>
-
-                      {/* Sector */}
-                      <td className="py-3 px-3 text-text-muted text-xs hidden md:table-cell">
-                        {row.sector ?? '—'}
-                      </td>
-
-                      {/* Price */}
-                      <td className="py-3 px-3 font-mono font-semibold text-text-primary tabular-nums">
-                        {formatPrice(row.price)}
-                      </td>
-
-                      {/* Change % */}
+                      <td className="py-3 px-3 font-mono font-bold text-text-primary">{row.ticker}</td>
+                      <td className="py-3 px-3 text-text-secondary text-xs max-w-36 truncate">{row.company_name ?? '—'}</td>
+                      <td className="py-3 px-3 text-text-muted text-xs hidden md:table-cell">{row.sector ?? '—'}</td>
+                      <td className="py-3 px-3 font-mono font-semibold text-text-primary tabular-nums">{formatPrice(row.price)}</td>
                       <td className={cn('py-3 px-3 font-mono font-semibold tabular-nums', getPriceClass(row.change_pct))}>
                         <span className="flex items-center gap-1">
                           {isUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
                           {formatPct(row.change_pct)}
                         </span>
                       </td>
-
-                      {/* Mkt Cap */}
                       <td className="py-3 px-3 font-mono text-text-secondary text-xs tabular-nums">
-                        {formatMarketCap(row.market_cap)}
+                        {row.market_cap ? `$${(row.market_cap / 1000).toFixed(0)}B` : '—'}
                       </td>
-
-                      {/* 7D Sparkline — lazy loaded per row */}
                       <td className="py-3 px-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                         <Sparkline ticker={row.ticker} isUp={isUp} />
                       </td>
@@ -238,11 +199,8 @@ export default function MarketPage() {
               </tbody>
             </table>
           </div>
-
           {rows.length === 0 && (
-            <div className="p-10 text-center text-text-muted text-sm">
-              No stocks match your filters
-            </div>
+            <div className="p-10 text-center text-text-muted text-sm">No stocks match your filters</div>
           )}
         </div>
       )}

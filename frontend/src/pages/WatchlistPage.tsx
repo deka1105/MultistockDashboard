@@ -1,17 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import {
-  SortableContext, useSortable, rectSortingStrategy, arrayMove,
-} from '@dnd-kit/sortable'
+import { SortableContext, useSortable, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Star, Plus, GitCompare, Trash2, GripVertical, Pencil, Check, X, FolderPlus } from 'lucide-react'
-import { useAppStore } from '@/store/useAppStore'
-import { useMultiCandles } from '@/hooks/useStockData'
+import {
+  Star, Plus, GitCompare, GripVertical,
+  Pencil, Check, X, FolderPlus, Trash2,
+} from 'lucide-react'
+import {
+  useBackendWatchlists, useCreateWatchlist, useRenameWatchlist,
+  useDeleteWatchlist, useAddWatchlistItem, useRemoveWatchlistItem,
+  useReorderWatchlist, useMultiCandles,
+} from '@/hooks/useStockData'
 import { WatchlistCard } from '@/components/watchlist/WatchlistCard'
+import { Skeleton } from '@/components/common/Skeleton'
 import { cn } from '@/lib/utils'
 
 const SERIES_COLORS = [
@@ -19,26 +24,19 @@ const SERIES_COLORS = [
   '#3b82f6','#8b5cf6','#ec4899','#14b8a6',
 ]
 
-// ─── Sortable wrapper ────────────────────────────────────────────────────────
+// ─── Sortable card wrapper ────────────────────────────────────────────────────
 
-function SortableCard({
-  ticker, index, color, candles, onRemove,
-}: {
+function SortableCard({ ticker, index, color, candles, onRemove }: {
   ticker: string; index: number; color: string
   candles?: { close: number }[]; onRemove: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ticker })
   return (
-    <div
-      ref={setNodeRef}
+    <div ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('relative', isDragging && 'z-50 opacity-80 scale-105')}
-    >
-      {/* Drag handle */}
-      <div
-        {...attributes} {...listeners}
-        className="absolute top-2 left-2 z-10 p-1 rounded cursor-grab active:cursor-grabbing text-text-muted opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-      >
+      className={cn('relative group', isDragging && 'z-50 opacity-80 scale-105')}>
+      <div {...attributes} {...listeners}
+        className="absolute top-2 left-2 z-10 p-1 rounded cursor-grab active:cursor-grabbing text-text-muted opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity">
         <GripVertical size={12} />
       </div>
       <WatchlistCard ticker={ticker} color={color} candles={candles} onRemove={onRemove} />
@@ -46,31 +44,50 @@ function SortableCard({
   )
 }
 
-// ─── Named list tab ───────────────────────────────────────────────────────────
-
-interface WatchlistTab {
-  id: string
-  name: string
-}
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function WatchlistPage() {
   const navigate = useNavigate()
-  const { watchlist, addToWatchlist, removeFromWatchlist } = useAppStore()
 
-  // Named lists — stored locally (PostgreSQL in Phase 5 when auth lands)
-  const [lists, setLists] = useState<WatchlistTab[]>([{ id: 'default', name: 'My Watchlist' }])
-  const [activeListId, setActiveListId] = useState('default')
-  const [editingListId, setEditingListId] = useState<string | null>(null)
+  const { data: lists, isLoading } = useBackendWatchlists()
+  const createList   = useCreateWatchlist()
+  const renameList   = useRenameWatchlist()
+  const deleteList   = useDeleteWatchlist()
+  const addItem      = useAddWatchlistItem()
+  const removeItem   = useRemoveWatchlistItem()
+  const reorderItems = useReorderWatchlist()
+
+  const [activeId,    setActiveId]    = useState<number | null>(null)
+  const [editingId,   setEditingId]   = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
-  const [newTicker, setNewTicker] = useState('')
-  const [order, setOrder] = useState<string[]>(watchlist)
+  const [newTicker,   setNewTicker]   = useState('')
+  const [localOrder,  setLocalOrder]  = useState<string[]>([])
+  const [initialised, setInitialised] = useState(false)
 
-  // Sync order when watchlist changes externally
-  const syncedOrder = order.filter(t => watchlist.includes(t))
-  const unordered = watchlist.filter(t => !syncedOrder.includes(t))
-  const displayOrder = [...syncedOrder, ...unordered]
+  // On first load: set active list or auto-create one if DB is empty
+  useEffect(() => {
+    if (isLoading || initialised) return
+    setInitialised(true)
 
-  const candlesQuery = useMultiCandles(displayOrder, '1W')
+    if (lists && lists.length > 0) {
+      setActiveId(lists[0].id)
+    } else {
+      // Fresh DB — create the default list automatically
+      createList.mutate('My Watchlist', {
+        onSuccess: (data: any) => setActiveId(data.id),
+      })
+    }
+  }, [isLoading, lists, initialised])
+
+  const activeList = lists?.find((l: any) => l.id === activeId)
+
+  useEffect(() => {
+    if (activeList) setLocalOrder(activeList.tickers ?? [])
+  }, [activeList?.id, (activeList?.tickers ?? []).join(',')])
+
+  const tickers = localOrder.length ? localOrder : (activeList?.tickers ?? [])
+
+  const candlesQuery = useMultiCandles(tickers, '1W')
   const candlesMap: Record<string, { close: number }[]> = {}
   candlesQuery.data?.forEach(({ ticker, data }: any) => {
     if (data?.candles) candlesMap[ticker] = data.candles
@@ -80,46 +97,68 @@ export default function WatchlistPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    if (over && active.id !== over.id) {
-      const oldIdx = displayOrder.indexOf(active.id as string)
-      const newIdx = displayOrder.indexOf(over.id as string)
-      setOrder(arrayMove(displayOrder, oldIdx, newIdx))
-    }
+    if (!over || active.id === over.id || !activeId) return
+    const oldIdx = tickers.indexOf(active.id as string)
+    const newIdx = tickers.indexOf(over.id as string)
+    const newOrder = arrayMove(tickers as string[], oldIdx, newIdx) as string[]
+    setLocalOrder(newOrder)
+    reorderItems.mutate({ id: activeId, ticker_order: newOrder })
   }
 
   const handleAdd = () => {
     const t = newTicker.trim().toUpperCase()
-    if (t) { addToWatchlist(t); setOrder(prev => [...prev, t]); setNewTicker('') }
+    if (!t) return
+    // If somehow no active list yet (edge case), create one first
+    if (!activeId) {
+      createList.mutate('My Watchlist', {
+        onSuccess: (data: any) => {
+          setActiveId(data.id)
+          addItem.mutate({ id: data.id, ticker: t })
+        },
+      })
+    } else {
+      addItem.mutate({ id: activeId, ticker: t })
+    }
+    setNewTicker('')
   }
 
   const handleRemove = (ticker: string) => {
-    removeFromWatchlist(ticker)
-    setOrder(prev => prev.filter(t => t !== ticker))
+    if (activeId) removeItem.mutate({ id: activeId, ticker })
   }
 
-  const addList = () => {
-    const id = `list-${Date.now()}`
-    setLists(prev => [...prev, { id, name: `List ${prev.length + 1}` }])
-    setActiveListId(id)
+  const handleCreateList = () => {
+    createList.mutate(`List ${(lists?.length ?? 0) + 1}`, {
+      onSuccess: (data: any) => setActiveId(data.id),
+    })
   }
 
-  const deleteList = (id: string) => {
-    if (lists.length === 1) return
-    setLists(prev => prev.filter(l => l.id !== id))
-    if (activeListId === id) setActiveListId(lists[0].id)
-  }
-
-  const startRename = (list: WatchlistTab) => {
-    setEditingListId(list.id)
-    setEditingName(list.name)
+  // Fix Bug 5: when deleting the active list, pick the next remaining list
+  const handleDeleteList = (listId: number) => {
+    const remaining = (lists ?? []).filter((l: any) => l.id !== listId)
+    deleteList.mutate(listId, {
+      onSuccess: () => {
+        if (remaining.length > 0) setActiveId(remaining[0].id)
+        else setActiveId(null)
+      },
+    })
   }
 
   const commitRename = () => {
-    if (editingName.trim()) {
-      setLists(prev => prev.map(l => l.id === editingListId ? { ...l, name: editingName.trim() } : l))
+    if (editingName.trim() && editingId) {
+      renameList.mutate({ id: editingId, name: editingName.trim() })
     }
-    setEditingListId(null)
+    setEditingId(null)
   }
+
+  if (isLoading || createList.isPending) return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-12 w-full" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-4 animate-slide-up max-w-screen-2xl mx-auto">
@@ -130,54 +169,60 @@ export default function WatchlistPage() {
           <Star size={18} className="text-accent-amber" />
           <h1 className="font-display font-bold text-xl text-text-primary">Watchlist</h1>
           <span className="font-mono text-[10px] text-text-muted px-2 py-0.5 rounded-full bg-bg-hover">
-            {watchlist.length} tickers
+            {tickers.length} tickers
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          {watchlist.length >= 2 && (
-            <button
-              onClick={() => navigate(`/compare?tickers=${displayOrder.slice(0, 8).join(',')}`)}
-              className="btn-ghost flex items-center gap-1.5 text-xs">
-              <GitCompare size={13} /> Compare All
-            </button>
-          )}
-        </div>
+        {tickers.length >= 2 && (
+          <button
+            onClick={() => navigate(`/compare?tickers=${tickers.slice(0, 8).join(',')}`)}
+            className="btn-ghost flex items-center gap-1.5 text-xs">
+            <GitCompare size={13} /> Compare All
+          </button>
+        )}
       </div>
 
       {/* Named list tabs */}
       <div className="flex items-center gap-1 flex-wrap">
-        {lists.map(list => (
+        {(lists ?? []).map((list: any) => (
           <div key={list.id} className="flex items-center group">
-            {editingListId === list.id ? (
+            {editingId === list.id ? (
               <div className="flex items-center gap-1 px-2 py-1 card">
                 <input
                   value={editingName}
                   onChange={e => setEditingName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingListId(null) }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') commitRename()
+                    if (e.key === 'Escape') setEditingId(null)
+                  }}
                   className="bg-transparent text-xs text-text-primary focus:outline-none w-24"
                   autoFocus
                 />
                 <button onClick={commitRename}><Check size={11} className="text-accent-green" /></button>
-                <button onClick={() => setEditingListId(null)}><X size={11} className="text-text-muted" /></button>
+                <button onClick={() => setEditingId(null)}><X size={11} className="text-text-muted" /></button>
               </div>
             ) : (
               <button
-                onClick={() => setActiveListId(list.id)}
+                onClick={() => setActiveId(list.id)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                  activeListId === list.id
+                  activeId === list.id
                     ? 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20'
                     : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
-                )}
-              >
+                )}>
                 {list.name}
-                {activeListId === list.id && (
+                {activeId === list.id && (
                   <span className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span onClick={e => { e.stopPropagation(); startRename(list) }}
-                      className="hover:text-text-primary"><Pencil size={9} /></span>
-                    {lists.length > 1 && (
-                      <span onClick={e => { e.stopPropagation(); deleteList(list.id) }}
-                        className="hover:text-accent-red"><X size={9} /></span>
+                    <span
+                      onClick={e => { e.stopPropagation(); setEditingId(list.id); setEditingName(list.name) }}
+                      className="hover:text-text-primary p-0.5">
+                      <Pencil size={9} />
+                    </span>
+                    {(lists?.length ?? 0) > 1 && (
+                      <span
+                        onClick={e => { e.stopPropagation(); handleDeleteList(list.id) }}
+                        className="hover:text-accent-red p-0.5">
+                        <Trash2 size={9} />
+                      </span>
                     )}
                   </span>
                 )}
@@ -185,7 +230,8 @@ export default function WatchlistPage() {
             )}
           </div>
         ))}
-        <button onClick={addList} className="btn-ghost flex items-center gap-1 text-xs px-2 py-1.5">
+        <button onClick={handleCreateList}
+          className="btn-ghost flex items-center gap-1 text-xs px-2 py-1.5">
           <FolderPlus size={13} /> New List
         </button>
       </div>
@@ -200,13 +246,16 @@ export default function WatchlistPage() {
           className="input-base flex-1"
           maxLength={10}
         />
-        <button onClick={handleAdd} disabled={!newTicker.trim()} className="btn-primary flex items-center gap-1.5">
+        <button
+          onClick={handleAdd}
+          disabled={!newTicker.trim() || addItem.isPending}
+          className="btn-primary flex items-center gap-1.5">
           <Plus size={14} /> Add
         </button>
       </div>
 
       {/* Sortable grid */}
-      {displayOrder.length === 0 ? (
+      {tickers.length === 0 ? (
         <div className="card p-16 flex flex-col items-center gap-4 text-center">
           <Star size={32} className="text-text-muted" />
           <div>
@@ -216,9 +265,9 @@ export default function WatchlistPage() {
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={displayOrder} strategy={rectSortingStrategy}>
+          <SortableContext items={tickers} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {displayOrder.map((ticker, i) => (
+              {tickers.map((ticker: string, i: number) => (
                 <SortableCard
                   key={ticker}
                   ticker={ticker}

@@ -5,16 +5,21 @@ import {
   useBasicFinancials, useCompanyNews,
 } from '@/hooks/useStockData'
 import { useAppStore } from '@/store/useAppStore'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import QuoteCard from '@/components/stocks/QuoteCard'
 import { StatsRow, WeekRangeBar, FinancialGrid } from '@/components/stocks/StatsRow'
 import PriceChart, { TimeRangeSelector, ChartTypeToggle, MAToggles } from '@/components/charts/PriceChart'
 import NewsPanel from '@/components/news/NewsPanel'
+import SentimentPanel from '@/components/sentiment/SentimentPanel'
 import { ErrorCard } from '@/components/common/ErrorBoundary'
-import { QuoteCardSkeleton, ChartSkeleton, StatsSkeleton, NewsSkeleton, Skeleton } from '@/components/common/Skeleton'
+import {
+  QuoteCardSkeleton, ChartSkeleton, StatsSkeleton,
+  NewsSkeleton, Skeleton,
+} from '@/components/common/Skeleton'
 
 export default function DashboardPage() {
-  const { ticker } = useParams<{ ticker: string }>()
-  const navigate = useNavigate()
+  const { ticker }   = useParams<{ ticker: string }>()
+  const navigate     = useNavigate()
   const { timeRange, addRecentTicker } = useAppStore()
   const T = ticker?.toUpperCase() ?? 'AAPL'
 
@@ -26,10 +31,12 @@ export default function DashboardPage() {
   const finQ     = useBasicFinancials(T)
   const newsQ    = useCompanyNews(T)
 
+  // WebSocket live tick — passed to QuoteCard + PriceChart
+  const { tick } = useWebSocket(T)
+
   if (!ticker) { navigate('/dashboard/AAPL', { replace: true }); return null }
 
-  // Last candle used for volume stat
-  const candles = candlesQ.data?.candles ?? []
+  const candles    = candlesQ.data?.candles ?? []
   const lastCandle = candles.length > 0 ? candles[candles.length - 1] : undefined
 
   return (
@@ -53,14 +60,16 @@ export default function DashboardPage() {
       {/* 52-week range */}
       {finQ.data && (
         <WeekRangeBar
-          price={quoteQ.data?.price ?? null}
+          price={tick?.price ?? quoteQ.data?.price ?? null}
           low52={finQ.data.week_52_low}
           high52={finQ.data.week_52_high}
         />
       )}
 
-      {/* Chart + News */}
+      {/* Chart + News + Sentiment */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+        {/* Chart */}
         <div className="xl:col-span-2">
           {candlesQ.isLoading ? <ChartSkeleton />
             : candlesQ.error  ? <ErrorCard message={candlesQ.error.message} onRetry={() => candlesQ.refetch()} />
@@ -76,16 +85,25 @@ export default function DashboardPage() {
                     <TimeRangeSelector />
                   </div>
                 </div>
-                {candlesQ.data && <PriceChart candles={candlesQ.data.candles} ticker={T} />}
+                {candlesQ.data && (
+                  <PriceChart candles={candlesQ.data.candles} ticker={T} liveTick={tick} />
+                )}
               </div>
             )}
         </div>
 
-        <div className="xl:col-span-1 min-h-96">
-          {newsQ.isLoading ? <div className="card p-4"><NewsSkeleton /></div>
-            : newsQ.error  ? <ErrorCard message={newsQ.error.message} />
-            : newsQ.data   ? <NewsPanel articles={newsQ.data.articles} ticker={T} />
-            : null}
+        {/* Right column — News + Sentiment stacked */}
+        <div className="xl:col-span-1 flex flex-col gap-4">
+          {/* Sentiment panel */}
+          <SentimentPanel ticker={T} />
+
+          {/* News */}
+          <div className="flex-1 min-h-80">
+            {newsQ.isLoading ? <div className="card p-4"><NewsSkeleton /></div>
+              : newsQ.error  ? <ErrorCard message={newsQ.error.message} />
+              : newsQ.data   ? <NewsPanel articles={newsQ.data.articles} ticker={T} />
+              : null}
+          </div>
         </div>
       </div>
 

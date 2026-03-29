@@ -3,7 +3,9 @@ import logging
 from typing import Annotated
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.services import finnhub as fh
 from app.schemas.stock import (
@@ -17,12 +19,17 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/stocks", tags=["stocks"])
+limiter = Limiter(key_func=get_remote_address)
 
-SP500_TOP30 = [
+# ─── S&P 500 top 50 ───────────────────────────────────────────────────────────
+
+SP500_TOP50 = [
     "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK.B",
     "LLY","TSLA","JPM","V","UNH","XOM","MA","AVGO","JNJ",
     "PG","HD","MRK","COST","ABBV","CVX","KO","PEP","WMT",
-    "BAC","CRM","NFLX","AMD",
+    "BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN","MCD","NKE",
+    "ADBE","TMO","ABT","TXN","NEE","PM","RTX","QCOM","HON",
+    "IBM","AMGN","GE","CAT","SPGI","INTU",
 ]
 
 SERIES_COLORS = [
@@ -43,7 +50,8 @@ def _validate_ticker(ticker: str) -> str:
 # ─── Quote ───────────────────────────────────────────────────────────────────
 
 @router.get("/quote/{ticker}", response_model=QuoteResponse)
-async def get_quote(ticker: str):
+@limiter.limit("120/minute")
+async def get_quote(request: Request, ticker: str):
     ticker = _validate_ticker(ticker)
     try:
         return await fh.get_quote(ticker)
@@ -55,10 +63,8 @@ async def get_quote(ticker: str):
 # ─── Candles ─────────────────────────────────────────────────────────────────
 
 @router.get("/candles/{ticker}", response_model=CandlesResponse)
-async def get_candles(
-    ticker: str,
-    range: Annotated[str, Query()] = "1M",
-):
+@limiter.limit("60/minute")
+async def get_candles(request: Request, ticker: str, range: Annotated[str, Query()] = "1M"):
     ticker = _validate_ticker(ticker)
     if range not in VALID_RANGES:
         raise HTTPException(status_code=422, detail=f"Invalid range. Must be one of: {VALID_RANGES}")
@@ -72,7 +78,8 @@ async def get_candles(
 # ─── Symbol Search ───────────────────────────────────────────────────────────
 
 @router.get("/search", response_model=SearchResponse)
-async def search_symbols(q: Annotated[str, Query(min_length=1, max_length=50)]):
+@limiter.limit("30/minute")
+async def search_symbols(request: Request, q: Annotated[str, Query(min_length=1, max_length=50)]):
     try:
         results = await fh.search_symbols(q)
         return SearchResponse(query=q, results=results)
@@ -84,7 +91,8 @@ async def search_symbols(q: Annotated[str, Query(min_length=1, max_length=50)]):
 # ─── News ─────────────────────────────────────────────────────────────────────
 
 @router.get("/news/{ticker}", response_model=NewsResponse)
-async def get_news(ticker: str, days: Annotated[int, Query(ge=1, le=30)] = 7):
+@limiter.limit("30/minute")
+async def get_news(request: Request, ticker: str, days: Annotated[int, Query(ge=1, le=30)] = 7):
     ticker = _validate_ticker(ticker)
     try:
         articles = await fh.get_company_news(ticker, days_back=days)
@@ -97,7 +105,8 @@ async def get_news(ticker: str, days: Annotated[int, Query(ge=1, le=30)] = 7):
 # ─── Company Profile ──────────────────────────────────────────────────────────
 
 @router.get("/profile/{ticker}", response_model=CompanyProfileResponse)
-async def get_profile(ticker: str):
+@limiter.limit("30/minute")
+async def get_profile(request: Request, ticker: str):
     ticker = _validate_ticker(ticker)
     try:
         return await fh.get_company_profile(ticker)
@@ -109,7 +118,8 @@ async def get_profile(ticker: str):
 # ─── Financials ───────────────────────────────────────────────────────────────
 
 @router.get("/financials/{ticker}", response_model=BasicFinancialsResponse)
-async def get_financials(ticker: str):
+@limiter.limit("30/minute")
+async def get_financials(request: Request, ticker: str):
     ticker = _validate_ticker(ticker)
     try:
         data = await fh.get_basic_financials(ticker)
@@ -122,12 +132,14 @@ async def get_financials(ticker: str):
 # ─── Compare ─────────────────────────────────────────────────────────────────
 
 @router.get("/compare", response_model=CompareResponse)
+@limiter.limit("20/minute")
 async def compare_stocks(
+    request: Request,
     tickers: Annotated[str, Query()],
     range: Annotated[str, Query()] = "3M",
 ):
     if range not in VALID_RANGES:
-        raise HTTPException(status_code=422, detail=f"Invalid range")
+        raise HTTPException(status_code=422, detail="Invalid range")
 
     ticker_list = [_validate_ticker(t.strip()) for t in tickers.split(",") if t.strip()]
     if not ticker_list:
@@ -135,7 +147,6 @@ async def compare_stocks(
     if len(ticker_list) > 8:
         raise HTTPException(status_code=422, detail="Maximum 8 tickers")
 
-    # Fetch all candles in parallel
     candle_results = await asyncio.gather(
         *[fh.get_candles(t, range) for t in ticker_list],
         return_exceptions=True,
@@ -150,7 +161,7 @@ async def compare_stocks(
         if not candles:
             continue
         start_price = candles[0]["close"]
-        end_price = candles[-1]["close"]
+        end_price   = candles[-1]["close"]
         if start_price == 0:
             continue
         points = [
@@ -171,31 +182,43 @@ async def compare_stocks(
             points=points,
         ))
 
-    return CompareResponse(tickers=[s.ticker for s in series_list], range=range, series=series_list)
+    return CompareResponse(
+        tickers=[s.ticker for s in series_list],
+        range=range,
+        series=series_list,
+    )
 
 
-# ─── Market Overview — parallelized ──────────────────────────────────────────
+# ─── Market Overview ─────────────────────────────────────────────────────────
 
 @router.get("/market/overview", response_model=MarketOverviewResponse)
-async def get_market_overview():
+@limiter.limit("10/minute")
+async def get_market_overview(request: Request):
     key = market_overview_key()
     cached = await cache_get(key)
     if cached:
         return cached
 
-    # Fetch all quotes AND profiles in parallel — not sequentially
-    quote_tasks   = [fh.get_quote(t) for t in SP500_TOP30]
-    profile_tasks = [fh.get_company_profile(t) for t in SP500_TOP30]
+    quote_tasks   = [fh.get_quote(t)           for t in SP500_TOP50]
+    profile_tasks = [fh.get_company_profile(t)  for t in SP500_TOP50]
+    candle_tasks  = [fh.get_candles(t, "1D")    for t in SP500_TOP50]
 
-    quotes, profiles = await asyncio.gather(
+    quotes, profiles, day_candles = await asyncio.gather(
         asyncio.gather(*quote_tasks,   return_exceptions=True),
         asyncio.gather(*profile_tasks, return_exceptions=True),
+        asyncio.gather(*candle_tasks,  return_exceptions=True),
     )
 
     items = []
-    for ticker, quote, profile in zip(SP500_TOP30, quotes, profiles):
+    for ticker, quote, profile, candles_resp in zip(SP500_TOP50, quotes, profiles, day_candles):
         q = quote   if not isinstance(quote,   Exception) else {}
         p = profile if not isinstance(profile, Exception) else {}
+        c = candles_resp if not isinstance(candles_resp, Exception) else {}
+
+        # Volume from most recent candle
+        candle_list = c.get("candles", []) if isinstance(c, dict) else []
+        volume = candle_list[-1]["volume"] if candle_list else None
+
         items.append(MarketOverviewItem(
             ticker=ticker,
             company_name=p.get("company_name"),
@@ -203,7 +226,7 @@ async def get_market_overview():
             price=q.get("price"),
             change=q.get("change"),
             change_pct=q.get("change_pct"),
-            volume=None,
+            volume=volume,
             market_cap=p.get("market_cap"),
         ))
 
