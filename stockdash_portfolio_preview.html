@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StockDash — Portfolio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;500;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  :root {
+    --bg:       #070b12;
+    --bg1:      #0d1320;
+    --bg2:      #111928;
+    --border:   #1e2a3a;
+    --border2:  #243245;
+    --text:     #e8eef7;
+    --text2:    #8a9ab5;
+    --text3:    #4a5a72;
+    --green:    #00e87a;
+    --green2:   #00b85f;
+    --red:      #ff3c5a;
+    --cyan:     #00c4ff;
+    --amber:    #ffb020;
+    --purple:   #a855f7;
+    --blue:     #3b82f6;
+    --glow-g:   rgba(0,232,122,0.12);
+    --glow-c:   rgba(0,196,255,0.12);
+    --glow-r:   rgba(255,60,90,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Layout ── */
+  .shell   { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--bg1); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+  .main    { flex: 1; overflow-y: auto; }
+
+  /* ── Sidebar ── */
+  .logo {
+    padding: 20px 20px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--green) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; color: #000;
+  }
+  .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: var(--text); }
+  .logo-tag  { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-section { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; padding: 8px 10px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    color: var(--text2); font-size: 13px; font-weight: 500;
+    transition: all 0.15s; margin-bottom: 1px;
+  }
+  .nav-item:hover  { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: rgba(0,196,255,0.08); color: var(--cyan); }
+  .nav-item.active .nav-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+  .nav-badge { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 20px; background: rgba(0,232,122,0.1); color: var(--green); border: 1px solid rgba(0,232,122,0.2); }
+
+  .sidebar-bottom { padding: 12px 10px; border-top: 1px solid var(--border); }
+  .plan-badge {
+    padding: 10px 12px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(59,130,246,0.1) 100%);
+    border: 1px solid rgba(168,85,247,0.2);
+  }
+  .plan-badge p { font-size: 11px; color: var(--purple); font-weight: 600; }
+  .plan-badge span { font-size: 10px; color: var(--text3); }
+
+  /* ── Header bar ── */
+  .topbar {
+    display: flex; align-items: center; gap: 12px; padding: 14px 28px;
+    border-bottom: 1px solid var(--border); background: var(--bg1);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; }
+  .topbar-sub   { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .btn-sm {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer;
+    background: var(--bg2); border: 1px solid var(--border2); color: var(--text2);
+    font-family: 'Instrument Sans', sans-serif; transition: all 0.15s;
+  }
+  .btn-sm:hover { color: var(--text); border-color: var(--border); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    border: none; color: #000; font-weight: 600;
+  }
+  .btn-primary:hover { opacity: 0.9; color: #000; }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite;
+  }
+  .live-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--green); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── Content grid ── */
+  .content { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 1600px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg1); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-hd {
+    display: flex; align-items: center; gap: 8px; padding: 14px 18px 0;
+  }
+  .card-title  { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px; }
+  .card-sub    { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .card-right  { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+  /* ── Summary KPI row ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .kpi {
+    background: var(--bg1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; position: relative; overflow: hidden;
+  }
+  .kpi::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .kpi.g::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .kpi.r::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+  .kpi.c::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .kpi.a::before { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+  .kpi.p::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+  .kpi-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+  .kpi-value { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); }
+  .kpi-value.up   { color: var(--green); }
+  .kpi-value.down { color: var(--red); }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 3px; margin-top: 4px;
+    font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 20px;
+  }
+  .kpi-badge.up   { background: rgba(0,232,122,0.1); color: var(--green); border: 1px solid rgba(0,232,122,0.2); }
+  .kpi-badge.down { background: rgba(255,60,90,0.1);  color: var(--red);   border: 1px solid rgba(255,60,90,0.2); }
+  .kpi-badge.flat { background: rgba(138,154,181,0.1); color: var(--text2); border: 1px solid var(--border); }
+  .kpi-sparkline  { margin-top: 8px; }
+
+  /* ── Mid-row ── */
+  .mid-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── Bottom row ── */
+  .bot-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+
+  /* ── Three col ── */
+  .three-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  th { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); font-weight: 400; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td { font-size: 12px; color: var(--text2); }
+  td.mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+  td.ticker { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); }
+  td.up   { color: var(--green); font-family: 'DM Mono', monospace; font-weight: 500; }
+  td.down { color: var(--red);   font-family: 'DM Mono', monospace; font-weight: 500; }
+
+  /* ── Chip ── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 20px; font-size: 10px; font-family: 'DM Mono', monospace;
+  }
+  .chip.up   { background: rgba(0,232,122,0.1); color: var(--green); border: 1px solid rgba(0,232,122,0.2); }
+  .chip.down { background: rgba(255,60,90,0.1);  color: var(--red);   border: 1px solid rgba(255,60,90,0.2); }
+  .chip.flat { background: rgba(138,154,181,0.08); color: var(--text2); border: 1px solid var(--border); }
+  .chip.cyan { background: rgba(0,196,255,0.08); color: var(--cyan); border: 1px solid rgba(0,196,255,0.2); }
+
+  /* ── Progress bar ── */
+  .progress-wrap { background: var(--bg2); border-radius: 4px; height: 5px; overflow: hidden; }
+  .progress-bar  { height: 100%; border-radius: 4px; }
+
+  /* ── Sector heatmap ── */
+  .heatmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 14px 18px; }
+  .heatmap-cell {
+    border-radius: 10px; padding: 12px; cursor: pointer; transition: transform 0.15s;
+    position: relative; overflow: hidden;
+  }
+  .heatmap-cell:hover { transform: scale(1.02); }
+  .heatmap-cell .hm-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 11px; margin-bottom: 4px; }
+  .heatmap-cell .hm-pct  { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+  .heatmap-cell .hm-cap  { font-family: 'DM Mono', monospace; font-size: 9px; opacity: 0.7; margin-top: 3px; }
+
+  /* ── Gauge SVG ── */
+  .gauge-wrap { display: flex; justify-content: center; align-items: center; padding: 8px 0 4px; position: relative; }
+
+  /* ── Calendar ── */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 14px 18px; }
+  .cal-day-hd { text-align: center; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); padding: 4px; }
+  .cal-day {
+    border-radius: 8px; padding: 6px 4px; min-height: 52px;
+    background: var(--bg2); border: 1px solid var(--border); cursor: pointer;
+    transition: border-color 0.15s; display: flex; flex-direction: column;
+  }
+  .cal-day:hover { border-color: var(--border2); }
+  .cal-day.has-earnings { border-color: rgba(255,176,32,0.3); background: rgba(255,176,32,0.04); }
+  .cal-day.today { border-color: var(--cyan); background: rgba(0,196,255,0.04); }
+  .cal-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); }
+  .cal-day.today .cal-num { color: var(--cyan); }
+  .cal-ticker { font-family: 'DM Mono', monospace; font-size: 8px; padding: 1px 4px; border-radius: 4px; margin-top: 2px; background: rgba(255,176,32,0.15); color: var(--amber); }
+  .cal-ticker.pre { background: rgba(0,232,122,0.1); color: var(--green); }
+  .cal-empty { background: transparent; border-color: transparent; }
+
+  /* ── RSI chart ── */
+  .indicator-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ── Alert list ── */
+  .alert-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .alert-icon.up   { background: rgba(0,232,122,0.1); }
+  .alert-icon.down { background: rgba(255,60,90,0.1); }
+  .alert-icon.flat { background: rgba(0,196,255,0.1); }
+
+  /* ── Correlation grid ── */
+  .corr-wrap { padding: 12px 18px 16px; overflow-x: auto; }
+  .corr-grid { display: grid; gap: 3px; }
+  .corr-cell {
+    width: 36px; height: 36px; border-radius: 5px; display: flex; align-items: center;
+    justify-content: center; font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 500;
+    cursor: pointer; transition: transform 0.1s; color: rgba(255,255,255,0.9);
+  }
+  .corr-cell:hover { transform: scale(1.1); z-index: 5; position: relative; }
+  .corr-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); }
+
+  /* ── Screener filter chips ── */
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--border); align-items: center; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px;
+    background: rgba(0,196,255,0.06); color: var(--cyan); border: 1px solid rgba(0,196,255,0.2);
+    font-family: 'DM Mono', monospace; cursor: pointer;
+  }
+  .filter-chip .x { opacity: 0.5; font-size: 12px; }
+  .add-filter {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; background: var(--bg2);
+    border: 1px dashed var(--border2); color: var(--text3); cursor: pointer;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── P&L bars ── */
+  .pnl-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .pnl-bar-label { font-family: 'DM Mono', monospace; font-size: 11px; width: 52px; color: var(--text2); }
+  .pnl-bar-track { flex: 1; height: 8px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+  .pnl-bar-fill  { height: 100%; border-radius: 4px; }
+  .pnl-bar-val   { font-family: 'DM Mono', monospace; font-size: 10px; width: 60px; text-align: right; }
+
+  /* ── Donut ── */
+  .donut-legend { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .legend-row { display: flex; align-items: center; gap: 10px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { flex: 1; font-size: 11px; color: var(--text2); }
+  .legend-pct  { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); }
+  .legend-val  { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); width: 70px; text-align: right; }
+
+  /* ── Mini sparkline SVG ── */
+  .sparkline { display: inline-block; }
+
+  /* ── Tag ── */
+  .tag { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 4px; }
+  .tag.pre  { background: rgba(0,232,122,0.1); color: var(--green); }
+  .tag.post { background: rgba(255,176,32,0.1); color: var(--amber); }
+  .tag.beat { background: rgba(0,196,255,0.1); color: var(--cyan); }
+  .tag.miss { background: rgba(255,60,90,0.1); color: var(--red); }
+
+  /* ── Scroll fade in ── */
+  .fade-in { opacity: 0; transform: translateY(10px); animation: fadeUp 0.45s forwards; }
+  @keyframes fadeUp { to { opacity:1; transform:none; } }
+  .fade-in:nth-child(1) { animation-delay: 0.05s; }
+  .fade-in:nth-child(2) { animation-delay: 0.10s; }
+  .fade-in:nth-child(3) { animation-delay: 0.15s; }
+  .fade-in:nth-child(4) { animation-delay: 0.20s; }
+  .fade-in:nth-child(5) { animation-delay: 0.25s; }
+
+  /* ── Misc ── */
+  .divider { height: 1px; background: var(--border); margin: 0 18px; }
+  .p14 { padding: 14px 18px; }
+  .row-space { display: flex; justify-content: space-between; align-items: center; }
+  .mono { font-family: 'DM Mono', monospace; }
+  .small-text { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .mt4 { margin-top: 4px; }
+  .mt8 { margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ──────────── SIDEBAR ──────────── -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">S</div>
+    <div>
+      <div class="logo-text">StockDash</div>
+      <div class="logo-tag">v1.0 · Pro</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Markets</div>
+    <div class="nav-item"><div class="nav-dot"></div>Dashboard</div>
+    <div class="nav-item"><div class="nav-dot"></div>Market Overview</div>
+    <div class="nav-item"><div class="nav-dot"></div>Compare</div>
+
+    <div class="nav-section">Portfolio</div>
+    <div class="nav-item active"><div class="nav-dot"></div>Portfolio P&L <span class="nav-badge">NEW</span></div>
+    <div class="nav-item"><div class="nav-dot"></div>Watchlist</div>
+    <div class="nav-item"><div class="nav-dot"></div>Screener <span class="nav-badge">NEW</span></div>
+
+    <div class="nav-section">Analysis</div>
+    <div class="nav-item"><div class="nav-dot"></div>Indicators <span class="nav-badge">NEW</span></div>
+    <div class="nav-item"><div class="nav-dot"></div>Earnings Calendar <span class="nav-badge">NEW</span></div>
+    <div class="nav-item"><div class="nav-dot"></div>Correlation <span class="nav-badge">NEW</span></div>
+    <div class="nav-item"><div class="nav-dot"></div>Alerts <span class="nav-badge">NEW</span></div>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="plan-badge">
+      <p>⚡ Pro Plan Active</p>
+      <span>Unlimited tickers · Real-time data</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ──────────── MAIN ──────────── -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Portfolio Overview</div>
+      <div class="topbar-sub">6 positions · last updated just now</div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-dot"></div>
+      <div class="live-label">LIVE</div>
+      <button class="btn-sm">Export CSV</button>
+      <button class="btn-sm">+ Add Position</button>
+      <button class="btn-sm btn-primary">Run Screener</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ── KPI ROW ── -->
+  <div class="kpi-row">
+    <div class="kpi g fade-in">
+      <div class="kpi-label">Portfolio Value</div>
+      <div class="kpi-value">$84,312</div>
+      <div class="kpi-badge up">▲ +$1,240 today</div>
+      <div class="kpi-sparkline">
+        <svg width="100%" height="28" viewBox="0 0 120 28">
+          <polyline fill="none" stroke="var(--green)" stroke-width="1.5"
+            points="0,20 15,18 30,15 45,17 60,12 75,10 90,8 105,6 120,4"/>
+          <polyline fill="rgba(0,232,122,0.08)" stroke="none"
+            points="0,20 15,18 30,15 45,17 60,12 75,10 90,8 105,6 120,4 120,28 0,28"/>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi g fade-in">
+      <div class="kpi-label">Total P&L</div>
+      <div class="kpi-value up">+$12,840</div>
+      <div class="kpi-badge up">▲ +17.97%</div>
+      <div class="small-text mt4">vs. $71,472 cost basis</div>
+    </div>
+    <div class="kpi r fade-in">
+      <div class="kpi-label">Today's P&L</div>
+      <div class="kpi-value up">+$1,240</div>
+      <div class="kpi-badge up">▲ +1.49%</div>
+      <div class="small-text mt4">3 up · 2 down · 1 flat</div>
+    </div>
+    <div class="kpi c fade-in">
+      <div class="kpi-label">Best Performer</div>
+      <div class="kpi-value" style="font-size:18px; color:var(--cyan)">NVDA</div>
+      <div class="kpi-badge up">▲ +$4,280 · +38.4%</div>
+      <div class="small-text mt4">bought @ $482 · now $667</div>
+    </div>
+    <div class="kpi a fade-in">
+      <div class="kpi-label">Portfolio Beta</div>
+      <div class="kpi-value">1.34</div>
+      <div class="kpi-badge flat">vs S&P 500</div>
+      <div class="small-text mt4">higher than mkt volatility</div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CHART + ALLOCATION ── -->
+  <div class="bot-row fade-in">
+
+    <!-- Portfolio vs S&P chart -->
+    <div class="card">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">Portfolio vs S&P 500</div>
+          <div class="card-sub">Normalized return since Jan 1</div>
+        </div>
+        <div class="card-right">
+          <span class="chip cyan">YTD</span>
+          <span class="chip flat">1M</span>
+          <span class="chip flat">3M</span>
+          <span class="chip flat">1Y</span>
+        </div>
+      </div>
+      <div class="p14">
+        <svg width="100%" height="190" viewBox="0 0 600 190" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="portGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--cyan)" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="var(--cyan)" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="spxGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--text3)" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="var(--text3)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid -->
+          <line x1="0" y1="95" x2="600" y2="95" stroke="var(--border)" stroke-width="1" stroke-dasharray="4,4"/>
+          <line x1="0" y1="47" x2="600" y2="47" stroke="var(--border)" stroke-width="0.5"/>
+          <line x1="0" y1="143" x2="600" y2="143" stroke="var(--border)" stroke-width="0.5"/>
+          <!-- S&P 500 area -->
+          <path d="M0,95 C30,90 60,85 90,80 S150,75 180,70 S240,68 270,65 S330,62 360,58 S420,55 450,52 S510,50 540,48 S570,46 600,44 L600,190 L0,190 Z" fill="url(#spxGrad)"/>
+          <path d="M0,95 C30,90 60,85 90,80 S150,75 180,70 S240,68 270,65 S330,62 360,58 S420,55 450,52 S510,50 540,48 S570,46 600,44" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <!-- Portfolio area -->
+          <path d="M0,95 C20,88 40,82 60,78 S100,70 130,62 S170,55 200,48 S240,42 270,38 S300,30 330,25 S370,20 400,16 S440,12 470,10 S520,8 560,7 S580,6 600,5 L600,190 L0,190 Z" fill="url(#portGrad)"/>
+          <path d="M0,95 C20,88 40,82 60,78 S100,70 130,62 S170,55 200,48 S240,42 270,38 S300,30 330,25 S370,20 400,16 S440,12 470,10 S520,8 560,7 S580,6 600,5" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+          <!-- End labels -->
+          <circle cx="600" cy="5" r="4" fill="var(--cyan)"/>
+          <circle cx="600" cy="44" r="4" fill="var(--text3)"/>
+          <text x="590" y="0" font-family="DM Mono" font-size="10" fill="var(--cyan)" text-anchor="end">+17.9%</text>
+          <text x="590" y="38" font-family="DM Mono" font-size="10" fill="var(--text3)" text-anchor="end">+8.4%</text>
+          <!-- X labels -->
+          <text x="0"   y="185" font-family="DM Mono" font-size="9" fill="var(--text3)">Jan</text>
+          <text x="120" y="185" font-family="DM Mono" font-size="9" fill="var(--text3)">Feb</text>
+          <text x="240" y="185" font-family="DM Mono" font-size="9" fill="var(--text3)">Mar</text>
+          <text x="360" y="185" font-family="DM Mono" font-size="9" fill="var(--text3)">Apr</text>
+          <text x="480" y="185" font-family="DM Mono" font-size="9" fill="var(--text3)">May</text>
+        </svg>
+        <!-- Legend -->
+        <div style="display:flex;gap:16px;margin-top:4px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:20px;height:2px;background:var(--cyan);border-radius:2px"></div>
+            <span class="small-text">My Portfolio +17.9%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:20px;height:2px;background:var(--text3);border-radius:2px;border-top:1px dashed var(--text3)"></div>
+            <span class="small-text">S&P 500 +8.4%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation donut -->
+    <div class="card">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">Allocation</div>
+          <div class="card-sub">by sector</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;padding:10px 0 4px">
+        <svg width="160" height="160" viewBox="-80 -80 160 160">
+          <!-- Donut segments -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--bg2)" stroke-width="22"/>
+          <!-- Technology 42% -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--cyan)" stroke-width="22"
+            stroke-dasharray="152.4 212.0" stroke-dashoffset="53" transform="rotate(-90)"/>
+          <!-- Consumer 18% -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--purple)" stroke-width="22"
+            stroke-dasharray="65.4 298.9" stroke-dashoffset="-99.4" transform="rotate(-90)"/>
+          <!-- Financials 16% -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--amber)" stroke-width="22"
+            stroke-dasharray="58.1 306.2" stroke-dashoffset="-164.8" transform="rotate(-90)"/>
+          <!-- Healthcare 14% -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--green)" stroke-width="22"
+            stroke-dasharray="50.9 313.4" stroke-dashoffset="-222.9" transform="rotate(-90)"/>
+          <!-- Energy 10% -->
+          <circle cx="0" cy="0" r="58" fill="none" stroke="var(--red)" stroke-width="22"
+            stroke-dasharray="36.4 327.9" stroke-dashoffset="-273.8" transform="rotate(-90)"/>
+          <!-- Center -->
+          <text x="0" y="-8" text-anchor="middle" font-family="DM Mono" font-size="20" font-weight="500" fill="var(--text)">$84K</text>
+          <text x="0" y="10" text-anchor="middle" font-family="DM Mono" font-size="9" fill="var(--text3)">total value</text>
+        </svg>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-row"><div class="legend-dot" style="background:var(--cyan)"></div><div class="legend-name">Technology</div><div class="legend-pct">42%</div><div class="legend-val">$35,411</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--purple)"></div><div class="legend-name">Consumer</div><div class="legend-pct">18%</div><div class="legend-val">$15,176</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div><div class="legend-name">Financials</div><div class="legend-pct">16%</div><div class="legend-val">$13,490</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div><div class="legend-name">Healthcare</div><div class="legend-pct">14%</div><div class="legend-val">$11,804</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div><div class="legend-name">Energy</div><div class="legend-pct">10%</div><div class="legend-val">$8,431</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOLDINGS TABLE ── -->
+  <div class="card fade-in">
+    <div class="card-hd" style="padding-bottom:12px">
+      <div>
+        <div class="card-title">Holdings</div>
+        <div class="card-sub">6 positions</div>
+      </div>
+      <div class="card-right">
+        <span class="chip flat">Sort: P&L %</span>
+        <span class="chip cyan">+ Add</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Ticker</th><th>Company</th><th>Shares</th>
+          <th>Avg Cost</th><th>Current</th><th>Value</th>
+          <th>P&L $</th><th>P&L %</th><th>Today</th><th>Weight</th><th>7D</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ticker">NVDA</td><td>NVIDIA Corp</td>
+          <td class="mono">20</td><td class="mono">$482.10</td>
+          <td class="mono">$667.40</td><td class="mono">$13,348</td>
+          <td class="up">+$3,706</td><td class="up">+38.4%</td>
+          <td class="up">+2.1%</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:42%;background:var(--cyan)"></div></div>
+              <span class="small-text">42%</span>
+            </div>
+          </td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--green)" stroke-width="1.5" points="0,18 10,16 20,14 30,12 40,10 50,7 60,5"/></svg></td>
+        </tr>
+        <tr>
+          <td class="ticker">AAPL</td><td>Apple Inc</td>
+          <td class="mono">40</td><td class="mono">$158.20</td>
+          <td class="mono">$189.50</td><td class="mono">$7,580</td>
+          <td class="up">+$1,252</td><td class="up">+19.8%</td>
+          <td class="up">+0.8%</td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:24%;background:var(--cyan)"></div></div><span class="small-text">24%</span></div></td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--green)" stroke-width="1.5" points="0,16 10,14 20,15 30,13 40,11 50,12 60,9"/></svg></td>
+        </tr>
+        <tr>
+          <td class="ticker">MSFT</td><td>Microsoft</td>
+          <td class="mono">15</td><td class="mono">$378.50</td>
+          <td class="mono">$415.20</td><td class="mono">$6,228</td>
+          <td class="up">+$550</td><td class="up">+9.7%</td>
+          <td class="up">+0.3%</td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:20%;background:var(--cyan)"></div></div><span class="small-text">20%</span></div></td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--green)" stroke-width="1.5" points="0,16 10,15 20,13 30,14 40,12 50,11 60,10"/></svg></td>
+        </tr>
+        <tr>
+          <td class="ticker">JPM</td><td>JPMorgan Chase</td>
+          <td class="mono">30</td><td class="mono">$195.40</td>
+          <td class="mono">$198.30</td><td class="mono">$5,949</td>
+          <td class="up">+$87</td><td class="up">+1.5%</td>
+          <td class="down">−0.4%</td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:19%;background:var(--amber)"></div></div><span class="small-text">19%</span></div></td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--amber)" stroke-width="1.5" points="0,12 10,13 20,11 30,12 40,14 50,13 60,15"/></svg></td>
+        </tr>
+        <tr>
+          <td class="ticker">TSLA</td><td>Tesla Inc</td>
+          <td class="mono">25</td><td class="mono">$214.80</td>
+          <td class="mono">$177.80</td><td class="mono">$4,445</td>
+          <td class="down">−$925</td><td class="down">−17.2%</td>
+          <td class="down">−1.8%</td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:14%;background:var(--red)"></div></div><span class="small-text">14%</span></div></td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--red)" stroke-width="1.5" points="0,10 10,11 20,13 30,15 40,14 50,17 60,19"/></svg></td>
+        </tr>
+        <tr>
+          <td class="ticker">META</td><td>Meta Platforms</td>
+          <td class="mono">10</td><td class="mono">$480.20</td>
+          <td class="mono">$512.60</td><td class="mono">$5,126</td>
+          <td class="up">+$324</td><td class="up">+6.7%</td>
+          <td class="up">+1.2%</td>
+          <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:70px"><div class="progress-bar" style="width:16%;background:var(--cyan)"></div></div><span class="small-text">16%</span></div></td>
+          <td><svg class="sparkline" width="60" height="24" viewBox="0 0 60 24"><polyline fill="none" stroke="var(--green)" stroke-width="1.5" points="0,17 10,15 20,14 30,12 40,11 50,10 60,8"/></svg></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── SECTOR HEATMAP + RSI ── -->
+  <div class="mid-row fade-in">
+
+    <!-- Sector heatmap -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:10px">
+        <div class="card-title">Sector Heatmap</div>
+        <div class="card-sub" style="margin-left:6px">S&P 500 · today</div>
+      </div>
+      <div class="heatmap-grid">
+        <div class="heatmap-cell" style="background:rgba(0,232,122,0.18);border:1px solid rgba(0,232,122,0.25)">
+          <div class="hm-name">Technology</div>
+          <div class="hm-pct" style="color:var(--green)">+2.14%</div>
+          <div class="hm-cap">$18.4T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(0,232,122,0.11);border:1px solid rgba(0,232,122,0.18)">
+          <div class="hm-name">Comm. Services</div>
+          <div class="hm-pct" style="color:var(--green)">+1.28%</div>
+          <div class="hm-cap">$6.2T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(0,232,122,0.07);border:1px solid rgba(0,232,122,0.12)">
+          <div class="hm-name">Financials</div>
+          <div class="hm-pct" style="color:var(--green)">+0.64%</div>
+          <div class="hm-cap">$9.1T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(0,232,122,0.05);border:1px solid rgba(0,232,122,0.1)">
+          <div class="hm-name">Industrials</div>
+          <div class="hm-pct" style="color:var(--green)">+0.31%</div>
+          <div class="hm-cap">$5.4T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(255,176,32,0.06);border:1px solid rgba(255,176,32,0.12)">
+          <div class="hm-name">Healthcare</div>
+          <div class="hm-pct" style="color:var(--amber)">−0.12%</div>
+          <div class="hm-cap">$7.8T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(255,60,90,0.07);border:1px solid rgba(255,60,90,0.14)">
+          <div class="hm-name">Consumer Disc.</div>
+          <div class="hm-pct" style="color:var(--red)">−0.55%</div>
+          <div class="hm-cap">$6.6T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(255,60,90,0.1);border:1px solid rgba(255,60,90,0.18)">
+          <div class="hm-name">Energy</div>
+          <div class="hm-pct" style="color:var(--red)">−0.88%</div>
+          <div class="hm-cap">$3.2T mkt cap</div>
+        </div>
+        <div class="heatmap-cell" style="background:rgba(255,60,90,0.14);border:1px solid rgba(255,60,90,0.22)">
+          <div class="hm-name">Utilities</div>
+          <div class="hm-pct" style="color:var(--red)">−1.24%</div>
+          <div class="hm-cap">$1.9T mkt cap</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RSI Chart -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:8px">
+        <div>
+          <div class="card-title">RSI (14) — NVDA</div>
+          <div class="card-sub">Relative Strength Index · 30d</div>
+        </div>
+        <div class="card-right">
+          <span class="chip up">RSI 68</span>
+        </div>
+      </div>
+      <div class="p14" style="padding-top:6px">
+        <svg width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none">
+          <!-- Zones -->
+          <rect x="0" y="0" width="300" height="28" fill="rgba(255,60,90,0.05)"/>
+          <rect x="0" y="112" width="300" height="28" fill="rgba(0,232,122,0.05)"/>
+          <!-- Reference lines -->
+          <line x1="0" y1="28" x2="300" y2="28" stroke="var(--red)" stroke-width="0.8" stroke-dasharray="3,3" opacity="0.5"/>
+          <line x1="0" y1="112" x2="300" y2="112" stroke="var(--green)" stroke-width="0.8" stroke-dasharray="3,3" opacity="0.5"/>
+          <line x1="0" y1="70" x2="300" y2="70" stroke="var(--border)" stroke-width="0.8"/>
+          <!-- Labels -->
+          <text x="4" y="26" font-family="DM Mono" font-size="8" fill="var(--red)" opacity="0.7">70 Overbought</text>
+          <text x="4" y="126" font-family="DM Mono" font-size="8" fill="var(--green)" opacity="0.7">30 Oversold</text>
+          <!-- RSI line -->
+          <polyline fill="none" stroke="var(--amber)" stroke-width="1.8"
+            points="0,90 15,85 30,80 45,75 60,72 75,68 90,65 105,60 120,58 135,55 150,52 165,50 180,48 195,45 210,42 225,40 240,38 255,36 270,35 285,34 300,33"/>
+          <!-- Current dot -->
+          <circle cx="300" cy="33" r="4" fill="var(--amber)"/>
+          <!-- Gradient fill -->
+          <path d="M0,90 15,85 30,80 45,75 60,72 75,68 90,65 105,60 120,58 135,55 150,52 165,50 180,48 195,45 210,42 225,40 240,38 255,36 270,35 285,34 300,33 L300,140 L0,140 Z" fill="rgba(255,176,32,0.06)"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="small-text">Current RSI: <span style="color:var(--amber);font-weight:500">68.2</span></span>
+          <span class="chip" style="background:rgba(255,176,32,0.1);color:var(--amber);border:1px solid rgba(255,176,32,0.2)">Approaching overbought</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACD -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:8px">
+        <div>
+          <div class="card-title">MACD (12,26,9) — NVDA</div>
+          <div class="card-sub">Momentum oscillator</div>
+        </div>
+        <div class="card-right">
+          <span class="chip up">Bullish Cross</span>
+        </div>
+      </div>
+      <div class="p14" style="padding-top:6px">
+        <svg width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none">
+          <!-- Zero line -->
+          <line x1="0" y1="70" x2="300" y2="70" stroke="var(--border)" stroke-width="0.8"/>
+          <!-- MACD histogram bars -->
+          <g opacity="0.7">
+            <rect x="0"   y="78" width="8" height="12" fill="var(--red)" rx="1"/>
+            <rect x="12"  y="76" width="8" height="14" fill="var(--red)" rx="1"/>
+            <rect x="24"  y="74" width="8" height="6"  fill="var(--red)" rx="1"/>
+            <rect x="36"  y="72" width="8" height="2"  fill="var(--red)" rx="1"/>
+            <rect x="48"  y="66" width="8" height="4"  fill="var(--green)" rx="1"/>
+            <rect x="60"  y="62" width="8" height="8"  fill="var(--green)" rx="1"/>
+            <rect x="72"  y="58" width="8" height="12" fill="var(--green)" rx="1"/>
+            <rect x="84"  y="54" width="8" height="16" fill="var(--green)" rx="1"/>
+            <rect x="96"  y="52" width="8" height="18" fill="var(--green)" rx="1"/>
+            <rect x="108" y="50" width="8" height="20" fill="var(--green)" rx="1"/>
+            <rect x="120" y="49" width="8" height="21" fill="var(--green)" rx="1"/>
+            <rect x="132" y="48" width="8" height="22" fill="var(--green)" rx="1"/>
+            <rect x="144" y="47" width="8" height="23" fill="var(--green)" rx="1"/>
+            <rect x="156" y="46" width="8" height="24" fill="var(--green)" rx="1"/>
+            <rect x="168" y="44" width="8" height="26" fill="var(--green)" rx="1"/>
+            <rect x="180" y="43" width="8" height="27" fill="var(--green)" rx="1"/>
+            <rect x="192" y="41" width="8" height="29" fill="var(--green)" rx="1"/>
+            <rect x="204" y="40" width="8" height="30" fill="var(--green)" rx="1"/>
+            <rect x="216" y="38" width="8" height="32" fill="var(--green)" rx="1"/>
+            <rect x="228" y="36" width="8" height="34" fill="var(--green)" rx="1"/>
+            <rect x="240" y="35" width="8" height="35" fill="var(--green)" rx="1"/>
+            <rect x="252" y="34" width="8" height="36" fill="var(--green)" rx="1"/>
+            <rect x="264" y="33" width="8" height="37" fill="var(--green)" rx="1"/>
+            <rect x="276" y="32" width="8" height="38" fill="var(--green)" rx="1"/>
+            <rect x="288" y="31" width="8" height="39" fill="var(--green)" rx="1"/>
+          </g>
+          <!-- MACD line -->
+          <polyline fill="none" stroke="var(--cyan)" stroke-width="1.5"
+            points="4,80 16,77 28,74 40,72 52,68 64,64 76,60 88,56 100,53 112,51 124,50 136,49 148,48 160,47 172,45 184,44 196,42 208,41 220,39 232,38 244,36 256,35 268,34 280,33 292,32"/>
+          <!-- Signal line -->
+          <polyline fill="none" stroke="var(--red)" stroke-width="1.2" stroke-dasharray="4,2"
+            points="4,82 16,79 28,76 40,74 52,71 64,67 76,63 88,59 100,56 112,54 124,53 136,52 148,51 160,50 172,48 184,47 196,45 208,44 220,42 232,41 244,39 256,38 268,37 280,36 292,35"/>
+          <!-- Bullish cross annotation -->
+          <circle cx="48" cy="68" r="5" fill="none" stroke="var(--amber)" stroke-width="1.5"/>
+          <text x="54" y="64" font-family="DM Mono" font-size="7" fill="var(--amber)">Cross</text>
+        </svg>
+        <div style="display:flex;gap:16px;margin-top:4px">
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:2px;background:var(--cyan)"></div><span class="small-text">MACD</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:2px;background:var(--red);border-top:1px dashed var(--red)"></div><span class="small-text">Signal</span></div>
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;background:var(--green);border-radius:2px"></div><span class="small-text">Histogram</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── EARNINGS CALENDAR + CORRELATION + ALERTS ── -->
+  <div class="three-row fade-in">
+
+    <!-- Earnings Calendar -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:10px">
+        <div class="card-title">Earnings Calendar</div>
+        <div class="card-sub" style="margin-left:6px">May 2026</div>
+        <div class="card-right">
+          <span class="tag pre">PRE</span>
+          <span class="tag post" style="margin-left:4px">POST</span>
+        </div>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-hd">M</div><div class="cal-day-hd">T</div><div class="cal-day-hd">W</div>
+        <div class="cal-day-hd">T</div><div class="cal-day-hd">F</div><div class="cal-day-hd">S</div><div class="cal-day-hd">S</div>
+        <!-- Week 1 -->
+        <div class="cal-day cal-empty"></div>
+        <div class="cal-day"><div class="cal-num">1</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">2</div><div class="cal-ticker pre">AAPL</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">3</div><div class="cal-ticker">AMZN</div></div>
+        <div class="cal-day"><div class="cal-num">4</div></div>
+        <div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div>
+        <!-- Week 2 -->
+        <div class="cal-day"><div class="cal-num">7</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">8</div><div class="cal-ticker pre">NVDA</div></div>
+        <div class="cal-day today"><div class="cal-num">9</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">10</div><div class="cal-ticker">MSFT</div></div>
+        <div class="cal-day"><div class="cal-num">11</div></div>
+        <div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div>
+        <!-- Week 3 -->
+        <div class="cal-day"><div class="cal-num">14</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">15</div><div class="cal-ticker">JPM</div><div class="cal-ticker pre">META</div></div>
+        <div class="cal-day"><div class="cal-num">16</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">17</div><div class="cal-ticker pre">TSLA</div></div>
+        <div class="cal-day"><div class="cal-num">18</div></div>
+        <div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div>
+        <!-- Week 4 -->
+        <div class="cal-day"><div class="cal-num">21</div></div>
+        <div class="cal-day"><div class="cal-num">22</div></div>
+        <div class="cal-day has-earnings"><div class="cal-num">23</div><div class="cal-ticker">GOOGL</div></div>
+        <div class="cal-day"><div class="cal-num">24</div></div>
+        <div class="cal-day"><div class="cal-num">25</div></div>
+        <div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div>
+      </div>
+    </div>
+
+    <!-- Correlation Heatmap -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:2px">
+        <div class="card-title">Correlation Matrix</div>
+        <div class="card-sub" style="margin-left:6px">90-day Pearson r</div>
+      </div>
+      <div class="corr-wrap">
+        <div style="display:flex;gap:3px;margin-bottom:3px;padding-left:48px">
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">AAPL</div>
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">MSFT</div>
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">NVDA</div>
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">TSLA</div>
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">META</div>
+          <div style="width:36px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3)">JPM</div>
+        </div>
+        <!-- Each row: label + 6 cells -->
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">AAPL</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.72)">0.84</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.6)">0.71</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.22)">0.18</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.55)">0.66</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.38)">0.45</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">MSFT</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.72)">0.84</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.65)">0.77</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.15)">0.11</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.62)">0.73</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.42)">0.50</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">NVDA</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.6)">0.71</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.65)">0.77</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.1)">0.08</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.56)">0.68</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.3)">0.36</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">TSLA</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.22)">0.18</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.15)">0.11</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.1)">0.08</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.28)">0.22</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.2)">0.14</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">META</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.55)">0.66</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.62)">0.73</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.56)">0.68</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.28)">0.22</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.36)">0.42</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px">
+            <div style="width:44px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);text-align:right;padding-right:4px">JPM</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.38)">0.45</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.42)">0.50</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.3)">0.36</div>
+            <div class="corr-cell" style="background:rgba(255,60,90,0.2)">0.14</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.36)">0.42</div>
+            <div class="corr-cell" style="background:rgba(0,196,255,0.9)">1.00</div>
+          </div>
+        </div>
+        <!-- Scale -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+          <span class="small-text">−1</span>
+          <div style="flex:1;height:6px;border-radius:3px;background:linear-gradient(90deg,rgba(255,60,90,0.8),var(--bg2),rgba(0,196,255,0.8))"></div>
+          <span class="small-text">+1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Price Alerts -->
+    <div class="card">
+      <div class="card-hd" style="padding-bottom:8px">
+        <div class="card-title">Price Alerts</div>
+        <div class="card-sub" style="margin-left:6px">3 active</div>
+        <div class="card-right"><span class="chip cyan">+ New</span></div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon up">📈</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">NVDA</span>
+            <span class="chip up">Active</span>
+          </div>
+          <div class="small-text mt4">Price above <span style="color:var(--green);font-weight:500">$700</span> → trigger</div>
+          <div class="small-text">current $667.40 · <span style="color:var(--text2)">$32.60 away</span></div>
+        </div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon down">📉</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">TSLA</span>
+            <span class="chip up">Active</span>
+          </div>
+          <div class="small-text mt4">Price below <span style="color:var(--red);font-weight:500">$160</span> → trigger</div>
+          <div class="small-text">current $177.80 · <span style="color:var(--text2)">$17.80 away</span></div>
+        </div>
+      </div>
+      <div class="alert-item">
+        <div class="alert-icon flat">🔔</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px">AAPL</span>
+            <span class="chip" style="background:rgba(255,176,32,0.1);color:var(--amber);border:1px solid rgba(255,176,32,0.2)">Near</span>
+          </div>
+          <div class="small-text mt4">% move &gt; <span style="color:var(--cyan);font-weight:500">5%</span> in one day</div>
+          <div class="small-text">today +0.8% · <span style="color:var(--amber)">4.2% to go</span></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="p14" style="padding-top:10px">
+        <div class="small-text" style="color:var(--text2);margin-bottom:8px">Recent Triggers</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between"><span class="mono" style="font-size:11px;color:var(--text)">NVDA hit $650 ▲</span><span class="small-text">2h ago</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="mono" style="font-size:11px;color:var(--text)">META +5.2% day ▲</span><span class="small-text">yesterday</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SCREENER ── -->
+  <div class="card fade-in">
+    <div class="card-hd">
+      <div>
+        <div class="card-title">Stock Screener</div>
+        <div class="card-sub">14 results match your filters</div>
+      </div>
+      <div class="card-right">
+        <span class="chip flat" style="cursor:pointer">Save Screen</span>
+        <span class="chip cyan" style="cursor:pointer">Saved Screens ▾</span>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-chip">Sector: Technology <span class="x">×</span></div>
+      <div class="filter-chip">P/E &lt; 35 <span class="x">×</span></div>
+      <div class="filter-chip">Mkt Cap &gt; $100B <span class="x">×</span></div>
+      <div class="filter-chip">Change % &gt; 0 today <span class="x">×</span></div>
+      <div class="add-filter">+ Add Filter</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Ticker</th><th>Company</th><th>Price</th><th>P/E</th><th>Mkt Cap</th><th>Revenue Growth</th><th>Today %</th><th>RSI</th><th>Signal</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ticker">NVDA</td><td>NVIDIA Corp</td><td class="mono">$667.40</td><td class="mono">32.4</td><td class="mono">$1.64T</td>
+          <td class="up">+122%</td><td class="up">+2.1%</td>
+          <td><span style="background:rgba(255,176,32,0.1);color:var(--amber);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px">68</span></td>
+          <td><span class="chip up">Strong Buy</span></td>
+        </tr>
+        <tr>
+          <td class="ticker">AAPL</td><td>Apple Inc</td><td class="mono">$189.50</td><td class="mono">28.5</td><td class="mono">$2.93T</td>
+          <td class="up">+8%</td><td class="up">+0.8%</td>
+          <td><span style="background:rgba(0,196,255,0.1);color:var(--cyan);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px">54</span></td>
+          <td><span class="chip up">Buy</span></td>
+        </tr>
+        <tr>
+          <td class="ticker">MSFT</td><td>Microsoft Corp</td><td class="mono">$415.20</td><td class="mono">34.1</td><td class="mono">$3.08T</td>
+          <td class="up">+17%</td><td class="up">+0.3%</td>
+          <td><span style="background:rgba(0,196,255,0.1);color:var(--cyan);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px">57</span></td>
+          <td><span class="chip up">Buy</span></td>
+        </tr>
+        <tr>
+          <td class="ticker">AMD</td><td>Adv. Micro Dev</td><td class="mono">$165.40</td><td class="mono">29.8</td><td class="mono">$267B</td>
+          <td class="up">+54%</td><td class="up">+1.4%</td>
+          <td><span style="background:rgba(0,232,122,0.1);color:var(--green);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px">44</span></td>
+          <td><span class="chip flat">Hold</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── P&L BREAKDOWN ── -->
+  <div class="card fade-in">
+    <div class="card-hd" style="padding-bottom:14px">
+      <div class="card-title">Daily P&L — 30 Day Calendar</div>
+      <div class="card-sub" style="margin-left:6px">Portfolio performance heatmap</div>
+    </div>
+    <div style="padding:0 18px 16px;display:flex;gap:4px;flex-wrap:wrap">
+      <!-- Generate 30 colored day squares -->
+      <script>
+        const vals = [0.4,-0.2,1.1,0.8,-0.5,1.4,0.3,-0.1,2.1,-0.8,0.6,1.2,-0.3,0.9,-1.1,0.5,1.8,-0.4,0.7,-0.2,1.3,0.4,-0.6,1.1,0.8,1.6,-0.2,0.9,-0.3,1.2];
+        vals.forEach((v,i)=>{
+          const intensity = Math.min(Math.abs(v)/2.5,1);
+          const color = v>0 ? `rgba(0,232,122,${0.08+intensity*0.55})` : `rgba(255,60,90,${0.08+intensity*0.55})`;
+          const border = v>0 ? `rgba(0,232,122,${0.15+intensity*0.4})` : `rgba(255,60,90,${0.15+intensity*0.4})`;
+          document.write(`<div title="Day ${i+1}: ${v>0?'+':''}${v}%" style="width:40px;height:36px;border-radius:6px;background:${color};border:1px solid ${border};display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.1s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform=''">`+
+          `<span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3)">${i+1}</span>`+
+          `<span style="font-family:'DM Mono',monospace;font-size:8px;color:${v>0?'var(--green)':'var(--red)'};font-weight:500">${v>0?'+':''}${v}%</span>`+
+          `</div>`);
+        });
+      </script>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+</body>
+</html>
