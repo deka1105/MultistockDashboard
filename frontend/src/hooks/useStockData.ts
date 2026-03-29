@@ -128,3 +128,115 @@ export function useMarketSparklines(tickers: string[]) {
     staleTime: 5 * 60_000,
   })
 }
+
+// ─── Watchlist backend hooks ──────────────────────────────────────────────────
+
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+export function useBackendWatchlists() {
+  return useQuery({
+    queryKey: ['watchlists'],
+    queryFn: () => api.get('/watchlist/').then(r => r.data),
+    staleTime: 30_000,
+  })
+}
+
+export function useCreateWatchlist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => api.post('/watchlist/', { name }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useRenameWatchlist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      api.patch(`/watchlist/${id}`, { name }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useDeleteWatchlist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/watchlist/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useAddWatchlistItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ticker }: { id: number; ticker: string }) =>
+      api.post(`/watchlist/${id}/items`, { ticker }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useRemoveWatchlistItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ticker }: { id: number; ticker: string }) =>
+      api.delete(`/watchlist/${id}/items/${ticker}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useReorderWatchlist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ticker_order }: { id: number; ticker_order: string[] }) =>
+      api.put(`/watchlist/${id}/reorder`, { ticker_order }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+}
+
+export function useSentiment(ticker: string | undefined, window = 24) {
+  return useQuery({
+    queryKey: ['sentiment', ticker, window],
+    queryFn: () => api.get(`/sentiment/${ticker}`, { params: { window } }).then(r => r.data),
+    enabled: !!ticker,
+    staleTime: 5 * 60_000,
+    refetchInterval: 10 * 60_000,
+  })
+}
+
+export function useSentimentHistory(ticker: string | undefined, window = 24) {
+  return useQuery({
+    queryKey: ['sentiment-history', ticker, window],
+    queryFn: () => api.get(`/sentiment/${ticker}/history`, { params: { window } }).then(r => r.data),
+    enabled: !!ticker,
+    staleTime: 10 * 60_000,
+  })
+}
+
+// ─── Quick watchlist (used by Dashboard + Market star buttons) ────────────────
+
+export function useQuickWatchlist() {
+  const qc = useQueryClient()
+
+  const add = useMutation({
+    mutationFn: (ticker: string) =>
+      api.post('/watchlist/quick-add', { ticker }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+
+  const remove = useMutation({
+    mutationFn: (ticker: string) =>
+      api.delete(`/watchlist/quick-remove/${ticker}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['watchlists'] }),
+  })
+
+  return { add, remove }
+}
+
+export function useIsInWatchlist(ticker: string | undefined) {
+  // Derive from backend watchlist list — avoids extra API call
+  const { data: lists } = useBackendWatchlists()
+  if (!ticker || !lists) return false
+  return lists.some((wl: any) =>
+    (wl.tickers ?? []).includes(ticker.toUpperCase())
+  )
+}

@@ -12,9 +12,9 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        // In Docker: service name 'api'. Outside Docker: set VITE_API_URL=http://localhost:8000
         target: process.env.VITE_API_URL ?? 'http://api:8000',
         changeOrigin: true,
+        ws: true,   // ← proxy WebSocket upgrades for /api/v1/ws/ticks/*
       },
     },
   },
