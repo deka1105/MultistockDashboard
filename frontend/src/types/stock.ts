@@ -97,3 +97,57 @@ export interface CompareResponse {
 
 export type TimeRange = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y'
 export type ChartType = 'line' | 'candlestick'
+
+// ─── Portfolio ────────────────────────────────────────────────────────────────
+
+export interface PortfolioInfo {
+  id: number
+  name: string
+  created_at: string
+}
+
+export interface EnrichedPosition {
+  id: number
+  ticker: string
+  shares: number
+  avg_cost: number
+  current_price: number
+  value: number
+  cost_basis: number
+  pnl: number
+  pnl_pct: number
+  today_change: number
+  today_pct: number
+  today_pnl: number
+  weight_pct: number
+  beta: number | null
+  notes: string | null
+  opened_at: string | null
+}
+
+export interface PortfolioSummary {
+  portfolio_id: number
+  portfolio_name: string
+  total_value: number
+  total_cost: number
+  total_pnl: number
+  total_pnl_pct: number
+  today_pnl: number
+  today_pnl_pct: number
+  beta: number | null
+  best_performer:  { ticker: string; pnl_pct: number } | null
+  worst_performer: { ticker: string; pnl_pct: number } | null
+  positions: EnrichedPosition[]
+}
+
+export interface PnLSnapshot {
+  date: string
+  total_value: number
+  total_cost: number
+  daily_return_pct: number | null
+}
+
+export interface PortfolioHistory {
+  portfolio_id: number
+  snapshots: PnLSnapshot[]
+}

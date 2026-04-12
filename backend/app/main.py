@@ -66,13 +66,14 @@ async def log_requests(request: Request, call_next):
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 
-from app.routers import health, stocks, watchlist, sentiment
+from app.routers import health, stocks, watchlist, sentiment, portfolio
 from app.routers import websocket as ws_router
 
 app.include_router(health.router)
 app.include_router(stocks.router,    prefix=settings.api_v1_prefix)
 app.include_router(watchlist.router, prefix=settings.api_v1_prefix)
 app.include_router(sentiment.router, prefix=settings.api_v1_prefix)
+app.include_router(portfolio.router,  prefix=settings.api_v1_prefix)
 app.include_router(ws_router.router, prefix=settings.api_v1_prefix)
 
 

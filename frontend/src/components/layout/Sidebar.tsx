@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, GitCompare, Star, BarChart3, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, GitCompare, Star, BarChart3, Briefcase, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useStockQuote } from '@/hooks/useStockData'
 import { formatPrice, formatPct, getPriceClass, cn } from '@/lib/utils'

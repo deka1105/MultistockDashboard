@@ -240,3 +240,82 @@ export function useIsInWatchlist(ticker: string | undefined) {
     (wl.tickers ?? []).includes(ticker.toUpperCase())
   )
 }
+
+
+// ─── Portfolio hooks ──────────────────────────────────────────────────────────
+
+export function usePortfolios() {
+  return useQuery({
+    queryKey: ['portfolios'],
+    queryFn: () => api.get('/portfolio/').then(r => r.data),
+    staleTime: 30_000,
+  })
+}
+
+export function usePortfolioSummary(portfolioId: number | null) {
+  return useQuery({
+    queryKey: ['portfolio-summary', portfolioId],
+    queryFn: () => api.get(`/portfolio/${portfolioId}/summary`).then(r => r.data),
+    enabled: portfolioId !== null,
+    refetchInterval: 30_000,
+    staleTime: 10_000,
+  })
+}
+
+export function usePortfolioHistory(portfolioId: number | null) {
+  return useQuery({
+    queryKey: ['portfolio-history', portfolioId],
+    queryFn: () => api.get(`/portfolio/${portfolioId}/history`).then(r => r.data),
+    enabled: portfolioId !== null,
+    staleTime: 60_000,
+  })
+}
+
+export function useCreatePortfolio() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => api.post('/portfolio/', { name }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portfolios'] }),
+  })
+}
+
+export function useDeletePortfolio() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/portfolio/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portfolios'] }),
+  })
+}
+
+export function useAddPosition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ portfolioId, ...body }: { portfolioId: number; ticker: string; shares: number; avg_cost: number; notes?: string }) =>
+      api.post(`/portfolio/${portfolioId}/positions`, body).then(r => r.data),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['portfolio-summary', v.portfolioId] })
+    },
+  })
+}
+
+export function useUpdatePosition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ portfolioId, positionId, ...body }: { portfolioId: number; positionId: number; shares?: number; avg_cost?: number; notes?: string }) =>
+      api.patch(`/portfolio/${portfolioId}/positions/${positionId}`, body).then(r => r.data),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['portfolio-summary', v.portfolioId] })
+    },
+  })
+}
+
+export function useDeletePosition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ portfolioId, positionId }: { portfolioId: number; positionId: number }) =>
+      api.delete(`/portfolio/${portfolioId}/positions/${positionId}`).then(r => r.data),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['portfolio-summary', v.portfolioId] })
+    },
+  })
+}

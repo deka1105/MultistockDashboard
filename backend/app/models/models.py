@@ -49,6 +49,7 @@ class User(Base):
     )
 
     watchlists: Mapped[list["Watchlist"]] = relationship("Watchlist", back_populates="user", cascade="all, delete-orphan")
+    portfolios: Mapped[list["Portfolio"]] = relationship("Portfolio", back_populates="user", cascade="all, delete-orphan")
 
 
 # ─── Watchlists ───────────────────────────────────────────────────────────────
@@ -126,3 +127,45 @@ class SentimentScore(Base):
     post_volume: Mapped[int] = mapped_column(Integer, default=0)
     window_hours: Mapped[int] = mapped_column(Integer, default=24)  # 1, 4, 24
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ─── Portfolio ────────────────────────────────────────────────────────────────
+
+class Portfolio(Base):
+    __tablename__ = "portfolios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, default="My Portfolio")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="portfolios")
+    positions: Mapped[list["Position"]] = relationship("Position", back_populates="portfolio", cascade="all, delete-orphan")
+    snapshots: Mapped[list["PnLSnapshot"]] = relationship("PnLSnapshot", back_populates="portfolio", cascade="all, delete-orphan")
+
+
+class Position(Base):
+    __tablename__ = "positions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False)
+    ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    shares: Mapped[float] = mapped_column(Float, nullable=False)
+    avg_cost: Mapped[float] = mapped_column(Float, nullable=False)   # cost basis per share
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    portfolio: Mapped["Portfolio"] = relationship("Portfolio", back_populates="positions")
+
+
+class PnLSnapshot(Base):
+    __tablename__ = "pnl_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False)
+    snapshot_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    total_value: Mapped[float] = mapped_column(Float, nullable=False)
+    total_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    daily_return_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    portfolio: Mapped["Portfolio"] = relationship("Portfolio", back_populates="snapshots")
