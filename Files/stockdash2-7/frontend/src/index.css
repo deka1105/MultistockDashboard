@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+  body {
+    @apply bg-bg-base text-text-primary font-sans;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,212,255,0.06), transparent),
+      linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-text-muted; }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card border border-bg-border rounded-xl;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 hover:border-accent-cyan/30 hover:shadow-lg hover:shadow-accent-cyan/5;
+  }
+
+  .stat-value {
+    @apply font-mono text-2xl font-semibold text-text-primary tabular-nums;
+  }
+
+  .stat-label {
+    @apply text-xs font-medium uppercase tracking-widest text-text-muted;
+  }
+
+  .badge-up {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-green/10 text-accent-green font-mono text-xs font-semibold;
+  }
+
+  .badge-down {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-red/10 text-accent-red font-mono text-xs font-semibold;
+  }
+
+  .badge-neutral {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-bg-border text-text-secondary font-mono text-xs font-semibold;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg bg-accent-cyan text-bg-base font-semibold text-sm transition-all duration-150 hover:bg-accent-cyan/90 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply px-3 py-2 rounded-lg text-text-secondary text-sm font-medium transition-all duration-150 hover:bg-bg-hover hover:text-text-primary;
+  }
+
+  .range-btn {
+    @apply px-3 py-1.5 rounded-md font-mono text-xs font-medium transition-all duration-150 text-text-muted hover:text-text-primary hover:bg-bg-hover;
+  }
+
+  .range-btn-active {
+    @apply range-btn bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20;
+  }
+
+  .input-base {
+    @apply w-full bg-bg-surface border border-bg-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted
+           focus:outline-none focus:ring-1 focus:ring-accent-cyan/50 focus:border-accent-cyan/50 transition-all;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary transition-all duration-150
+           hover:bg-bg-hover hover:text-text-primary cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/15;
+  }
+
+  /* Recharts overrides */
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    @apply !bg-bg-card !border-bg-border !rounded-xl !shadow-2xl;
+  }
+
+  .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.04) !important; }
+}
+
+@layer utilities {
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .text-price { @apply font-mono tabular-nums; }
+  .glow-cyan { box-shadow: 0 0 20px rgba(0,212,255,0.15); }
+  .glow-green { box-shadow: 0 0 20px rgba(0,255,136,0.15); }
+}
