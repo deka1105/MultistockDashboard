@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# FastAPI / uvicorn
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+.nuxt/
+.cache/
+*.local
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ML models (large files — store in object storage)
+*.bin
+*.pt
+*.pkl
+ml/models/
