@@ -1,38 +1,34 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# StockDash — Render Blueprint  (render.yaml at repo root)
+# StockDash — Render Blueprint
 #
-# REPO STRUCTURE EXPECTED:
+# Repo structure:
 #   repo-root/
-#     backend/          ← Python/FastAPI (rootDir for Docker services)
+#     backend/          ← rootDir for Docker services
 #       Dockerfile
 #       requirements.txt
 #       entrypoint.sh
 #       app/
-#     frontend/         ← React/Vite (built as static site)
-#       src/
+#     frontend/         ← rootDir for static site
 #       package.json
-#     render.yaml       ← THIS FILE
-#     docker-compose.yml
+#       src/
+#     render.yaml       ← this file (at repo root)
 #
-# Deploy: dashboard.render.com → New → Blueprint Instance → connect repo
+# Deploy: dashboard.render.com → New → Blueprint Instance
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
-  # ── 0. Redis Key Value ─────────────────────────────────────────────────────
+  # ── Redis Key Value ──────────────────────────────────────────────────────────
   - type: keyvalue
     name: stockdash-redis
     plan: free
     maxmemoryPolicy: noeviction
 
-  # ── 1. FastAPI Backend ─────────────────────────────────────────────────────
+  # ── FastAPI Backend ──────────────────────────────────────────────────────────
   - type: web
     name: stockdash-api
     runtime: docker
-    # rootDir: set to backend/ so all paths in Dockerfile are relative to it
     rootDir: backend
-    # With rootDir=backend, dockerfilePath is just "Dockerfile" (already in backend/)
-    # and dockerContext is "." meaning the backend/ directory itself
     dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: starter
@@ -42,7 +38,7 @@ services:
       - key: APP_ENV
         value: production
       - key: DEBUG
-        value: false
+        value: "false"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
@@ -68,16 +64,12 @@ services:
         value: https://stockdash-frontend.onrender.com
       - key: FINNHUB_API_KEY
         value: ""
-    startCommand: >-
-      ./entrypoint.sh
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port $PORT
-      --workers 2
-      --proxy-headers
-      --forwarded-allow-ips='*'
+    # startCommand is run as: bash -c "command"
+    # $PORT is set by Render automatically (usually 10000)
+    # ./entrypoint.sh handles migrations then starts uvicorn
+    startCommand: ./entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers --forwarded-allow-ips='*'
 
-  # ── 2. Celery Worker ───────────────────────────────────────────────────────
+  # ── Celery Worker ────────────────────────────────────────────────────────────
   - type: worker
     name: stockdash-worker
     runtime: docker
@@ -90,7 +82,7 @@ services:
       - key: APP_ENV
         value: production
       - key: DEBUG
-        value: false
+        value: "false"
       - key: DATABASE_URL
         fromDatabase:
           name: stockdash-db
@@ -112,13 +104,10 @@ services:
           property: connectionString
       - key: FINNHUB_API_KEY
         value: ""
-    startCommand: >-
-      ./entrypoint.sh
-      celery -A app.workers.celery_app worker
-      --loglevel=info
-      --concurrency=2
+    # Workers do NOT run migrations (entrypoint.sh skips them when $1 != uvicorn)
+    startCommand: ./entrypoint.sh celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
 
-  # ── 3. Celery Beat Scheduler ───────────────────────────────────────────────
+  # ── Celery Beat ──────────────────────────────────────────────────────────────
   - type: worker
     name: stockdash-beat
     runtime: docker
@@ -131,7 +120,7 @@ services:
       - key: APP_ENV
         value: production
       - key: DEBUG
-        value: false
+        value: "false"
       - key: DATABASE_URL
         fromDatabase:
           name: stockdash-db
@@ -153,12 +142,9 @@ services:
           property: connectionString
       - key: FINNHUB_API_KEY
         value: ""
-    startCommand: >-
-      ./entrypoint.sh
-      celery -A app.workers.celery_app beat
-      --loglevel=info
+    startCommand: ./entrypoint.sh celery -A app.workers.celery_app beat --loglevel=info
 
-  # ── 4. React Frontend (Static Site) ───────────────────────────────────────
+  # ── React Frontend (Static Site) ─────────────────────────────────────────────
   - type: web
     name: stockdash-frontend
     runtime: static
@@ -174,15 +160,13 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
     routes:
+      # SPA fallback — all paths serve index.html (React Router handles routing)
       - type: rewrite
         source: /*
         destination: /index.html
 
-# ── Managed PostgreSQL ─────────────────────────────────────────────────────────
+# ── Managed PostgreSQL ────────────────────────────────────────────────────────
 databases:
   - name: stockdash-db
     databaseName: stockdash

@@ -1,35 +1,34 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
-# StockDash Backend Entrypoint
+# StockDash entrypoint — handles migrations + process start
 #
-# Handles:
-#   1. Alembic migrations (only when running the API server, not workers)
-#   2. Graceful SIGTERM handling for Render zero-downtime deploys
-#   3. Fallback if DATABASE_URL is not yet available
+# Called by Render's startCommand and by docker-compose CMD.
+# Usage: ./entrypoint.sh <command> [args...]
+#   ./entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port $PORT
+#   ./entrypoint.sh celery -A app.workers.celery_app worker
+#   ./entrypoint.sh celery -A app.workers.celery_app beat
 # ─────────────────────────────────────────────────────────────────────────────
 set -e
 
-trap "echo 'Received SIGTERM — shutting down gracefully'; exit 0" SIGTERM SIGINT
+# Graceful shutdown on SIGTERM (Render zero-downtime deploys)
+trap 'echo "SIGTERM received — shutting down"; kill $PID 2>/dev/null; exit 0' SIGTERM SIGINT
 
-# Only run migrations when starting the API server (first arg contains "uvicorn")
-# Celery workers and beat schedulers skip this to avoid race conditions.
-if echo "$*" | grep -q "uvicorn"; then
-    echo "🔄 Running Alembic database migrations..."
-
-    # Retry up to 10 times in case the DB isn't ready yet (cold start)
-    MAX_RETRIES=10
-    RETRY_COUNT=0
+# ── Alembic migrations (only for the API server, not workers) ───────────────
+if [[ "$1" == "uvicorn" ]]; then
+    echo "🔄 Running database migrations..."
+    RETRIES=0
     until alembic upgrade head; do
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-        if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-            echo "❌ Migration failed after $MAX_RETRIES attempts — exiting"
+        RETRIES=$((RETRIES+1))
+        if [ "$RETRIES" -ge 10 ]; then
+            echo "❌ Migrations failed after 10 attempts. Check DATABASE_URL."
             exit 1
         fi
-        echo "⏳ Migration attempt $RETRY_COUNT failed — retrying in 5s..."
+        echo "   Attempt $RETRIES failed — retrying in 5s..."
         sleep 5
     done
     echo "✅ Migrations complete"
 fi
 
+# ── Start process ────────────────────────────────────────────────────────────
 echo "🚀 Starting: $*"
 exec "$@"
