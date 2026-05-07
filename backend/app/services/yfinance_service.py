@@ -113,11 +113,31 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
 
 async def yf_search_symbols(query: str) -> list[dict]:
     """
-    Search symbols using the TICKER_DB (yfinance has no search API).
-    Falls back to our comprehensive 218-ticker search database.
+    Search symbols using our comprehensive 200+ ticker database.
+    Also attempts yfinance ticker lookup for direct symbol matches.
     """
     from app.services.mock_data import get_mock_search
-    return get_mock_search(query)
+    results = get_mock_search(query)
+
+    # If query looks like an exact ticker and isn't in our DB, try yfinance directly
+    if query.strip().upper() == query.strip() and len(query.strip()) <= 6 and not results:
+        try:
+            import yfinance as yf
+            t = yf.Ticker(query.strip().upper())
+            info = t.fast_info
+            if info.last_price:
+                results = [{
+                    "ticker":      query.strip().upper(),
+                    "symbol":      query.strip().upper(),
+                    "description": t.info.get("longName", query.upper()),
+                    "name":        t.info.get("longName", query.upper()),
+                    "type":        "Common Stock",
+                    "exchange":    t.info.get("exchange", ""),
+                    "sector":      t.info.get("sector", ""),
+                }]
+        except Exception:
+            pass
+    return results
 
 
 async def yf_get_company_profile(ticker: str) -> dict[str, Any]:

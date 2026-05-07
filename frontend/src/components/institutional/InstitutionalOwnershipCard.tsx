@@ -71,6 +71,16 @@ export default function InstitutionalOwnershipCard({ ticker }: Props) {
     size: Math.min(Math.sqrt(t.shares / 1000) * 3, 16),
   }))
 
+  if (loadingInst || loadingInsider) {
+    return (
+      <div className="card p-4 space-y-3">
+        <div className="h-5 w-48 bg-bg-hover rounded animate-pulse" />
+        <div className="h-32 bg-bg-hover rounded animate-pulse" />
+        <div className="h-24 bg-bg-hover rounded animate-pulse" />
+      </div>
+    )
+  }
+
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 mb-3">

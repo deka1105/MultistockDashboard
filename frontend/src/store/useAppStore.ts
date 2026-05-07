@@ -53,8 +53,10 @@ interface AppState {
   setMacdSignal: (n: number) => void
 
   // Candlestick patterns
-  showPatterns: boolean
-  togglePatterns: () => void
+  showPatterns:    boolean
+  showOptionsFlow: boolean
+  togglePatterns:    () => void
+  toggleOptionsFlow: () => void
 
   // Stochastic settings
   stochK:    number

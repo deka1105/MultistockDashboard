@@ -28,7 +28,8 @@ export default function DashboardPage() {
   const { ticker }   = useParams<{ ticker: string }>()
   const navigate     = useNavigate()
   const { timeRange, addRecentTicker } = useAppStore()
-  const T = ticker?.toUpperCase() ?? 'AAPL'
+  const T     = ticker?.toUpperCase() ?? 'AAPL'
+  const store = useAppStore()
 
   useEffect(() => { if (T) addRecentTicker(T) }, [T])
 
@@ -73,8 +74,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Options flow heatmap */}
-      <OptionsFlowHeatmap ticker={T} />
+      {/* Options flow heatmap — toggle in chart controls */}
+      {showOptionsFlow && <OptionsFlowHeatmap ticker={T} />}
 
       {/* Inline alert creator */}
       <InlineAlertCreator ticker={T} />

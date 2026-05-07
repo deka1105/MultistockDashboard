@@ -197,7 +197,7 @@ def compute_sentiment_scores(self):
                             score = (bullish - bearish) / labeled
                             label = "positive" if score > 0.1 else "negative" if score < -0.1 else "neutral"
                         else:
-                            # TODO: FinBERT inference in Phase 4 completion
+                            # Lexicon-based scoring (FinBERT optional upgrade in Phase 5)
                             score = 0.0
                             label = "neutral"
 

@@ -16,8 +16,19 @@ type SortKey = 'ticker' | 'price' | 'change_pct' | 'market_cap' | 'volume'
 type SortDir  = 'asc' | 'desc'
 
 const SECTORS = [
-  'All','Technology','Financial Services','Consumer Cyclical',
-  'Communication','Healthcare','Energy','Industrials',
+  'All',
+  'Technology',
+  'Consumer Cyclical',
+  'Financial Services',
+  'Healthcare',
+  'Industrials',
+  'Consumer Staples',
+  'Communication',
+  'Energy',
+  'Real Estate',
+  'Utilities',
+  'Materials',
+  'ETF',
 ]
 
 function Sparkline({ ticker, isUp }: { ticker: string; isUp: boolean }) {

@@ -1,51 +1,35 @@
 #!/bin/bash
+# ─────────────────────────────────────────────────────────────────────────────
+# StockDash Backend Entrypoint
+#
+# Handles:
+#   1. Alembic migrations (only when running the API server, not workers)
+#   2. Graceful SIGTERM handling for Render zero-downtime deploys
+#   3. Fallback if DATABASE_URL is not yet available
+# ─────────────────────────────────────────────────────────────────────────────
 set -e
 
-# Only run DB migrations when starting the API server, not workers
-SHOULD_MIGRATE=false
-for arg in "$@"; do
-  if [[ "$arg" == *"uvicorn"* ]]; then
-    SHOULD_MIGRATE=true
-    break
-  fi
-done
+trap "echo 'Received SIGTERM — shutting down gracefully'; exit 0" SIGTERM SIGINT
 
-if [ "$SHOULD_MIGRATE" = true ]; then
-  echo "⏳ Waiting for database..."
-  until python -c "
-import asyncio, asyncpg, os
-async def check():
-    url = os.environ.get('DATABASE_URL','').replace('+asyncpg','')
-    conn = await asyncpg.connect(url)
-    await conn.close()
-asyncio.run(check())
-" 2>/dev/null; do
-    echo "  DB not ready — retrying in 2s..."
-    sleep 2
-  done
-  echo "✅ Database is up"
+# Only run migrations when starting the API server (first arg contains "uvicorn")
+# Celery workers and beat schedulers skip this to avoid race conditions.
+if echo "$*" | grep -q "uvicorn"; then
+    echo "🔄 Running Alembic database migrations..."
 
-  echo "⏳ Running Alembic migrations..."
-  alembic upgrade head
-  echo "✅ Migrations complete"
-else
-  # Workers: just wait for DB to be reachable before starting
-  echo "⏳ Waiting for database (worker mode)..."
-  until python -c "
-import asyncio, asyncpg, os
-async def check():
-    url = os.environ.get('DATABASE_URL','').replace('+asyncpg','')
-    conn = await asyncpg.connect(url)
-    await conn.close()
-asyncio.run(check())
-" 2>/dev/null; do
-    echo "  DB not ready — retrying in 2s..."
-    sleep 2
-  done
-  echo "✅ Database is up"
+    # Retry up to 10 times in case the DB isn't ready yet (cold start)
+    MAX_RETRIES=10
+    RETRY_COUNT=0
+    until alembic upgrade head; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+            echo "❌ Migration failed after $MAX_RETRIES attempts — exiting"
+            exit 1
+        fi
+        echo "⏳ Migration attempt $RETRY_COUNT failed — retrying in 5s..."
+        sleep 5
+    done
+    echo "✅ Migrations complete"
 fi
 
-echo "🚀 Starting $@"
-# Trap SIGTERM for graceful shutdown
-trap "exit 0" SIGTERM
+echo "🚀 Starting: $*"
 exec "$@"

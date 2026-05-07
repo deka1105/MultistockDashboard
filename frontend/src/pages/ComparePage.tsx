@@ -97,6 +97,11 @@ export default function ComparePage() {
         <ChartSkeleton />
       ) : error ? (
         <ErrorCard message={(error as Error).message} onRetry={refetch} />
+      ) : isError ? (
+        <div className="card p-8 text-center">
+          <p className="text-text-primary font-semibold mb-2">Failed to load comparison data</p>
+          <button onClick={() => refetch()} className="btn-primary text-sm">Retry</button>
+        </div>
       ) : data?.series?.length ? (
         <div className="space-y-4">
           <div id="compare-chart-area" className="card p-4">

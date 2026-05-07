@@ -21,7 +21,15 @@ interface EarningsEvent {
 export default function EarningsCalendarPage() {
   const navigate = useNavigate()
   const [month, setMonth] = useState(new Date())
-  const { data, isLoading } = useEarningsCalendar(60)
+  const { data, isLoading, isError, refetch } = useEarningsCalendar(60)
+
+  if (isError) return (
+    <div className="card p-12 flex flex-col items-center gap-4 text-center">
+      <p className="text-text-primary font-semibold">Failed to load earnings calendar</p>
+      <p className="text-text-muted text-sm">Check your connection and try again.</p>
+      <button onClick={() => refetch()} className="btn-primary text-sm">Retry</button>
+    </div>
+  )
 
   const events: EarningsEvent[] = data?.events ?? []
 

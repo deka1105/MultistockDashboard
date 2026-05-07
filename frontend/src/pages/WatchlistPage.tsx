@@ -49,7 +49,7 @@ function SortableCard({ ticker, index, color, candles, onRemove }: {
 export default function WatchlistPage() {
   const navigate = useNavigate()
 
-  const { data: lists, isLoading } = useBackendWatchlists()
+  const { data: lists, isLoading, isError, refetch } = useBackendWatchlists()
   const createList   = useCreateWatchlist()
   const renameList   = useRenameWatchlist()
   const deleteList   = useDeleteWatchlist()
@@ -149,6 +149,14 @@ export default function WatchlistPage() {
     }
     setEditingId(null)
   }
+
+  if (isError) return (
+    <div className="card p-12 flex flex-col items-center gap-4 text-center">
+      <p className="text-text-primary font-semibold">Failed to load watchlists</p>
+      <p className="text-text-muted text-sm">Check your connection and try again.</p>
+      <button onClick={() => refetch()} className="btn-primary text-sm">Retry</button>
+    </div>
+  )
 
   if (isLoading || createList.isPending) return (
     <div className="space-y-4">

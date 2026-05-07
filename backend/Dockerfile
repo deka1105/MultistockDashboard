@@ -1,26 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# StockDash Backend — Dockerfile
+#
+# Build context: backend/  (rootDir: backend in render.yaml)
+# So all COPY paths are relative to the backend/ directory.
+#
+# Local build (from repo root):
+#   docker build -t stockdash-api -f backend/Dockerfile backend/
+#
+# Render builds this automatically via render.yaml (rootDir: backend).
+# ─────────────────────────────────────────────────────────────────────────────
+
 FROM python:3.11-slim
 
-# WORKDIR is /code, NOT /app — the Python package is named 'app'
-# and must be importable as 'app.*', which requires its parent on sys.path
+# WORKDIR /code — Python package 'app' must be importable as app.*
+# so /code must be on PYTHONPATH (its parent directory contains app/).
 WORKDIR /code
 
-ENV PYTHONPATH=/code
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/code \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# System deps
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
+# System dependencies
+# libpq-dev: PostgreSQL client for asyncpg
+# gcc: needed to compile some Python C extensions
+# curl: used in health checks
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       gcc \
+       libpq-dev \
+       curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies first (Docker layer caching)
+# This layer only rebuilds when requirements.txt changes
+COPY requirements.txt ./requirements.txt
+RUN pip install -r requirements.txt
 
+# Copy application source
 COPY . .
 
+# Ensure entrypoint is executable
 RUN chmod +x entrypoint.sh
 
+# Expose for local development (Render uses $PORT env var)
 EXPOSE 8000
+
+# Health check for Render (also works with docker-compose)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]

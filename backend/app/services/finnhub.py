@@ -68,10 +68,10 @@ async def _get(path: str, params: dict | None = None) -> dict:
 # ─── Quote ───────────────────────────────────────────────────────────────────
 
 async def get_quote(ticker: str) -> dict[str, Any]:
-    """Real-time quote for a ticker."""
-    if USE_MOCK:
-        from app.services.mock_data import get_mock_quote
-        return get_mock_quote(ticker)
+    """Real-time quote for a ticker. Uses yfinance when no Finnhub key."""
+    if USE_YFINANCE:
+        from app.services.yfinance_service import yf_get_quote
+        return await yf_get_quote(ticker)
 
     key = quote_key(ticker)
     cached = await cache_get(key)
@@ -108,9 +108,9 @@ RESOLUTION_MAP = {
 
 async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
     """OHLCV candle data for a given time range key."""
-    if USE_MOCK:
-        from app.services.mock_data import get_mock_candles
-        return get_mock_candles(ticker, range_key)
+    if USE_YFINANCE:
+        from app.services.yfinance_service import yf_get_candles
+        return await yf_get_candles(ticker, range_key)
 
     resolution, days = RESOLUTION_MAP.get(range_key, ("D", 30))
     now = int(datetime.now(timezone.utc).timestamp())
@@ -162,9 +162,9 @@ async def search_symbols(query: str) -> list[dict]:
     if not query:
         return []
 
-    if USE_MOCK:
-        from app.services.mock_data import get_mock_search
-        return get_mock_search(query)
+    if USE_YFINANCE:
+        from app.services.yfinance_service import yf_search_symbols
+        return await yf_search_symbols(query)
 
     key = search_key(query)
     cached = await cache_get(key)
@@ -238,9 +238,9 @@ def _map_sentiment(raw: str | None) -> str:
 
 async def get_company_profile(ticker: str) -> dict[str, Any]:
     """Company metadata: name, sector, market cap, logo, etc."""
-    if USE_MOCK:
-        from app.services.mock_data import get_mock_profile
-        return get_mock_profile(ticker)
+    if USE_YFINANCE:
+        from app.services.yfinance_service import yf_get_company_profile
+        return await yf_get_company_profile(ticker)
 
     data = await _get("/stock/profile2", params={"symbol": ticker.upper()})
     return {
@@ -261,9 +261,9 @@ async def get_company_profile(ticker: str) -> dict[str, Any]:
 
 async def get_basic_financials(ticker: str) -> dict[str, Any]:
     """Key financial metrics: 52-week range, P/E, beta, etc."""
-    if USE_MOCK:
-        from app.services.mock_data import get_mock_financials
-        return get_mock_financials(ticker)
+    if USE_YFINANCE:
+        from app.services.yfinance_service import yf_get_basic_financials
+        return await yf_get_basic_financials(ticker)
 
     data = await _get("/stock/metric", params={
         "symbol": ticker.upper(),

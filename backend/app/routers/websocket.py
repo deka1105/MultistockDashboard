@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services import finnhub as fh
+from app.services.finnhub import USE_YFINANCE
 from app.core.cache import get_redis
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,11 @@ async def _poll_ticker(ticker: str):
     try:
         while _connections.get(ticker):
             try:
-                quote = await fh.get_quote(ticker)
+                if USE_YFINANCE:
+                    from app.services.yfinance_service import yf_get_quote
+                    quote = await yf_get_quote(ticker)
+                else:
+                    quote = await fh.get_quote(ticker)
                 price = quote.get("price")
 
                 tick = {
@@ -116,7 +121,11 @@ async def websocket_ticks(websocket: WebSocket, ticker: str):
 
     # Send immediate snapshot on connect
     try:
-        quote = await fh.get_quote(ticker)
+        if USE_YFINANCE:
+            from app.services.yfinance_service import yf_get_quote
+            quote = await yf_get_quote(ticker)
+        else:
+            quote = await fh.get_quote(ticker)
         await websocket.send_json({
             "type": "snapshot",
             "ticker": ticker,
