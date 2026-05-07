@@ -9,6 +9,9 @@ import ComparePage from '@/pages/ComparePage'
 import WatchlistPage from '@/pages/WatchlistPage'
 import MarketPage from '@/pages/MarketPage'
 import PortfolioPage from '@/pages/PortfolioPage'
+import ScreenerPage from '@/pages/ScreenerPage'
+import AlertsPage from '@/pages/AlertsPage'
+import EarningsCalendarPage from '@/pages/EarningsCalendarPage'
 import { NotFoundPage } from '@/pages/PlaceholderPages'
 import { ChartSkeleton } from '@/components/common/Skeleton'
 
@@ -30,6 +33,9 @@ export default function App() {
             <Route path="/watchlist" element={<Suspense fallback={<PageLoader />}><WatchlistPage /></Suspense>} />
             <Route path="/market"     element={<Suspense fallback={<PageLoader />}><MarketPage /></Suspense>} />
             <Route path="/portfolio"  element={<Suspense fallback={<PageLoader />}><PortfolioPage /></Suspense>} />
+            <Route path="/screener"   element={<Suspense fallback={<PageLoader />}><ScreenerPage /></Suspense>} />
+            <Route path="/alerts"     element={<Suspense fallback={<PageLoader />}><AlertsPage /></Suspense>} />
+            <Route path="/calendar"   element={<Suspense fallback={<PageLoader />}><EarningsCalendarPage /></Suspense>} />
             <Route path="*"          element={<NotFoundPage />} />
           </Route>
         </Routes>

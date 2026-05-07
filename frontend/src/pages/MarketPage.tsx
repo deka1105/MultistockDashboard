@@ -10,6 +10,7 @@ import { formatPrice, formatPct, formatMarketCap, getPriceClass, cn } from '@/li
 import { Skeleton } from '@/components/common/Skeleton'
 import { ErrorCard } from '@/components/common/ErrorBoundary'
 import api from '@/lib/api'
+import SectorHeatmap from '@/components/market/SectorHeatmap'
 
 type SortKey = 'ticker' | 'price' | 'change_pct' | 'market_cap' | 'volume'
 type SortDir  = 'asc' | 'desc'
@@ -67,6 +68,7 @@ export default function MarketPage() {
     return set
   }, [watchlists])
 
+  const [viewMode, setViewMode] = useState<'table' | 'heatmap'>('table')
   const [sortKey, setSortKey] = useState<SortKey>('market_cap')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sector,  setSector]  = useState('All')
@@ -114,6 +116,15 @@ export default function MarketPage() {
             {rows.length} stocks · 60s refresh
           </span>
         )}
+        <div className="ml-auto flex items-center gap-1 p-0.5 rounded-lg bg-bg-hover">
+          {([['table', 'Table'], ['heatmap', 'Heatmap']] as const).map(([v, l]) => (
+            <button key={v} onClick={() => setViewMode(v)}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-xs font-medium transition-all',
+                viewMode === v ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+              )}>{l}</button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -127,7 +138,9 @@ export default function MarketPage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {viewMode === 'heatmap' && <SectorHeatmap />}
+
+      {viewMode === 'table' && isLoading ? (
         <div className="card p-4 space-y-2">
           {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
         </div>

@@ -272,11 +272,11 @@ class TestCompareEndpoint:
 
 class TestMarketOverviewEndpoint:
     @pytest.mark.asyncio
-    async def test_market_overview_returns_50_items(self, client):
+    async def test_market_overview_returns_items(self, client):
         r = await client.get("/api/v1/stocks/market/overview")
         assert r.status_code == 200
         data = r.json()
-        assert len(data["items"]) == 50
+        assert len(data["items"]) >= 50
 
     @pytest.mark.asyncio
     async def test_market_overview_all_items_have_prices(self, client):
@@ -298,10 +298,11 @@ class TestMarketOverviewEndpoint:
         assert "updated_at" in r.json()
 
     @pytest.mark.asyncio
-    async def test_market_overview_brk_b_included(self, client):
+    async def test_market_overview_has_major_tickers(self, client):
         r = await client.get("/api/v1/stocks/market/overview")
         tickers = {i["ticker"] for i in r.json()["items"]}
-        assert "BRK.B" in tickers
+        for t in ["AAPL", "MSFT", "NVDA", "TSLA"]:
+            assert t in tickers, f"{t} should be in market overview"
 
 
 # ─── Watchlist CRUD ───────────────────────────────────────────────────────────

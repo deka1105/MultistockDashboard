@@ -19,8 +19,13 @@ API_KEY = settings.finnhub_api_key
 # Use mock data when no API key is configured (offline/test dev mode)
 USE_MOCK = not API_KEY or API_KEY == "your_finnhub_api_key_here"
 
+USE_YFINANCE = USE_MOCK  # When no Finnhub key, use yfinance for real data
+
 if USE_MOCK:
-    logger.warning("FINNHUB_API_KEY not set — using mock data for all stock endpoints")
+    logger.warning(
+        "FINNHUB_API_KEY not set — using yfinance (free real-time data) "
+        "with mock fallback for unsupported features"
+    )
 
 
 # ─── HTTP client (shared, connection-pooled) ──────────────────────────────────

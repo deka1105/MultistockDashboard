@@ -6,6 +6,7 @@ from app.core.config import settings
 
 # SQLite (used in tests) doesn't support pool_size / max_overflow
 _is_sqlite = settings.database_url.startswith("sqlite")
+_db_url    = settings.database_url if _is_sqlite else settings.asyncpg_database_url
 
 _engine_kwargs: dict = {
     "echo": settings.debug,
@@ -18,7 +19,7 @@ else:
     _engine_kwargs["pool_size"] = 10
     _engine_kwargs["max_overflow"] = 20
 
-engine = create_async_engine(settings.database_url, **_engine_kwargs)
+engine = create_async_engine(_db_url, **_engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,

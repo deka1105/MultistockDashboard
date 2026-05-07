@@ -21,10 +21,19 @@ interface UseWebSocketResult {
 }
 
 const WS_BASE = (() => {
+  // In production (Render): use VITE_WS_URL env var
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
+  // In Docker local dev: derive from current host (proxied by Vite)
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  // In Docker: same host as the page, proxied by Vite
   return `${proto}//${window.location.host}`
 })()
+
+// Forward status to global registry (read by useWebSocketStatus in TopBar)
+let _registerWsTick: ((ticker: string, connected: boolean) => void) | null = null
+try {
+  // Dynamic import to avoid circular dependency
+  import('@/hooks/useStockData').then(m => { _registerWsTick = m._registerWsTick })
+} catch {}
 
 export function useWebSocket(ticker: string | undefined): UseWebSocketResult {
   const [tick, setTick]         = useState<PriceTick | null>(null)
@@ -48,6 +57,7 @@ export function useWebSocket(ticker: string | undefined): UseWebSocketResult {
         setConnected(true)
         setError(null)
         reconnectAttempts.current = 0
+        if (ticker) _registerWsTick?.(ticker, true)
       }
 
       ws.onmessage = (event) => {
@@ -63,6 +73,7 @@ export function useWebSocket(ticker: string | undefined): UseWebSocketResult {
         if (!mountedRef.current) return
         setConnected(false)
         wsRef.current = null
+        if (ticker) _registerWsTick?.(ticker, false)
 
         // Exponential backoff reconnect (max 30s)
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30_000)

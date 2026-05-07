@@ -46,4 +46,6 @@ asyncio.run(check())
 fi
 
 echo "🚀 Starting $@"
+# Trap SIGTERM for graceful shutdown
+trap "exit 0" SIGTERM
 exec "$@"

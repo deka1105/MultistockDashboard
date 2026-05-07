@@ -126,7 +126,7 @@ export default function QuoteCard({ quote, profile }: QuoteCardProps) {
           {formatPrice(price)}
         </span>
         <div className="flex items-center gap-2 mb-1">
-          <span className={cn('font-mono text-base font-semibold tabular-nums', pctCls)}>
+          <span aria-live="polite" aria-atomic="true" className={cn('font-mono text-base font-semibold tabular-nums', pctCls)}>
             {formatChange(change)}
           </span>
           <span className={isUp ? 'badge-up' : 'badge-down'}>

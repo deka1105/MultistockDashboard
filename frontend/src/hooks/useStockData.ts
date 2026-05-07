@@ -319,3 +319,195 @@ export function useDeletePosition() {
     },
   })
 }
+
+
+// ─── Screener ─────────────────────────────────────────────────────────────────
+
+export function useScreener(filters: object[], sortBy = 'market_cap', sortDir = 'desc', page = 1) {
+  return useQuery({
+    queryKey: ['screener', filters, sortBy, sortDir, page],
+    queryFn: () => api.get('/screener/', {
+      params: {
+        filters: JSON.stringify(filters),
+        sort_by: sortBy,
+        sort_dir: sortDir,
+        page,
+        per_page: 25,
+      },
+    }).then(r => r.data),
+    staleTime: 30_000,
+    placeholderData: (prev: any) => prev,
+  })
+}
+
+export function useScreenerPresets() {
+  return useQuery({
+    queryKey: ['screener-presets'],
+    queryFn: () => api.get('/screener/presets').then(r => r.data),
+    staleTime: Infinity,
+  })
+}
+
+export function useScreenerFields() {
+  return useQuery({
+    queryKey: ['screener-fields'],
+    queryFn: () => api.get('/screener/fields').then(r => r.data),
+    staleTime: Infinity,
+  })
+}
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+
+export function useAlerts() {
+  return useQuery({
+    queryKey: ['alerts'],
+    queryFn: () => api.get('/alerts/').then(r => r.data),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  })
+}
+
+export function useCreateAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { ticker: string; alert_type: string; threshold?: number }) =>
+      api.post('/alerts/', body).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+export function useDeleteAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/alerts/${id}`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+export function useReactivateAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.patch(`/alerts/${id}/reactivate`).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+export function useCheckAlerts() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post('/alerts/check').then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+// ─── Earnings ─────────────────────────────────────────────────────────────────
+
+export function useEarningsCalendar(days = 30) {
+  return useQuery({
+    queryKey: ['earnings-calendar', days],
+    queryFn: () => api.get('/earnings/calendar', { params: { days } }).then(r => r.data),
+    staleTime: 3_600_000,
+  })
+}
+
+export function useEarningsHistory(ticker: string | undefined) {
+  return useQuery({
+    queryKey: ['earnings-history', ticker],
+    queryFn: () => api.get(`/earnings/${ticker}/history`).then(r => r.data),
+    enabled: !!ticker,
+    staleTime: 3_600_000,
+  })
+}
+
+export function useOptionsChain(ticker: string) {
+  return useQuery({
+    queryKey: ['options', ticker],
+    queryFn:  () => api.get(`/stocks/options/${ticker}`).then(r => r.data),
+    enabled:  !!ticker,
+    staleTime: 5 * 60_000,   // 5-min — options data changes slowly
+    retry: 1,
+  })
+}
+
+// ─── Phase 10: Portfolio command-centre hooks ──────────────────────────────
+
+export function usePortfolioEarnings(portfolioId: number | null) {
+  return useQuery({
+    queryKey: ['portfolio-earnings', portfolioId],
+    queryFn:  () => api.get(`/portfolio/${portfolioId}/upcoming-earnings`).then(r => r.data),
+    enabled:  !!portfolioId,
+    staleTime: 3_600_000,
+  })
+}
+
+export function usePortfolioAlerts(portfolioId: number | null) {
+  return useQuery({
+    queryKey: ['portfolio-alerts', portfolioId],
+    queryFn:  () => api.get(`/portfolio/${portfolioId}/active-alerts`).then(r => r.data),
+    enabled:  !!portfolioId,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  })
+}
+
+export function usePortfolioScreenerPreview(portfolioId: number | null) {
+  return useQuery({
+    queryKey: ['portfolio-screener-preview', portfolioId],
+    queryFn:  () => api.get(`/portfolio/${portfolioId}/screener-preview`).then(r => r.data),
+    enabled:  !!portfolioId,
+    staleTime: 5 * 60_000,
+  })
+}
+
+// ─── Phase 11: WebSocket Status ───────────────────────────────────────────────
+
+interface WsSubscription {
+  ticker:    string
+  connected: boolean
+  lastTick:  number | null   // epoch ms
+}
+
+// Module-level registry so TopBar can observe without re-subscribing
+const _wsRegistry = new Map<string, WsSubscription>()
+const _wsListeners = new Set<() => void>()
+
+export function _registerWsTick(ticker: string, connected: boolean) {
+  _wsRegistry.set(ticker, {
+    ticker,
+    connected,
+    lastTick: connected ? Date.now() : (_wsRegistry.get(ticker)?.lastTick ?? null),
+  })
+  _wsListeners.forEach(fn => fn())
+}
+
+export function useWebSocketStatus() {
+  const [, rerender] = useState(0)
+
+  useEffect(() => {
+    const fn = () => rerender(n => n + 1)
+    _wsListeners.add(fn)
+    return () => { _wsListeners.delete(fn) }
+  }, [])
+
+  const subs = Array.from(_wsRegistry.values())
+  const totalActive   = subs.filter(s => s.connected).length
+  const totalTracked  = subs.length
+  const anyConnected  = totalActive > 0
+  const allConnected  = totalTracked > 0 && totalActive === totalTracked
+
+  // Most recent tick across all subscriptions
+  const lastTickMs = subs.reduce<number | null>((best, s) => {
+    if (s.lastTick == null) return best
+    return best == null ? s.lastTick : Math.max(best, s.lastTick)
+  }, null)
+
+  const secondsAgo = lastTickMs ? Math.floor((Date.now() - lastTickMs) / 1000) : null
+
+  const status: 'connected' | 'partial' | 'disconnected' | 'idle' =
+    totalTracked === 0  ? 'idle'
+    : allConnected      ? 'connected'
+    : anyConnected      ? 'partial'
+    : 'disconnected'
+
+  return { status, totalActive, totalTracked, secondsAgo, lastTickMs }
+}

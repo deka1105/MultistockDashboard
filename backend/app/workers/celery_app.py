@@ -47,6 +47,16 @@ celery_app.conf.beat_schedule = {
         "task": "app.workers.tasks.sentiment_tasks.ingest_stocktwits",
         "schedule": crontab(minute="*/30"),
     },
+    # Check price alerts every 30 seconds
+    "check-alerts": {
+        "task": "app.workers.tasks.stock_tasks.check_alerts_task",
+        "schedule": 30.0,
+    },
+    # Refresh institutional ownership once daily (task self-deduplicates by quarter)
+    "refresh-institutional": {
+        "task": "app.workers.tasks.stock_tasks.refresh_institutional_ownership",
+        "schedule": 86400.0,   # daily
+    },
     # Recompute sentiment scores every hour
     "compute-sentiment": {
         "task": "app.workers.tasks.sentiment_tasks.compute_sentiment_scores",

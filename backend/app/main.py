@@ -48,7 +48,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"] if settings.debug else ["https://yourdomain.com"],
+    allow_origins=settings.origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,7 +66,7 @@ async def log_requests(request: Request, call_next):
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 
-from app.routers import health, stocks, watchlist, sentiment, portfolio
+from app.routers import health, stocks, watchlist, sentiment, portfolio, screener, alerts, earnings
 from app.routers import websocket as ws_router
 
 app.include_router(health.router)
@@ -74,6 +74,9 @@ app.include_router(stocks.router,    prefix=settings.api_v1_prefix)
 app.include_router(watchlist.router, prefix=settings.api_v1_prefix)
 app.include_router(sentiment.router, prefix=settings.api_v1_prefix)
 app.include_router(portfolio.router,  prefix=settings.api_v1_prefix)
+app.include_router(screener.router, prefix=settings.api_v1_prefix)
+app.include_router(alerts.router,   prefix=settings.api_v1_prefix)
+app.include_router(earnings.router, prefix=settings.api_v1_prefix)
 app.include_router(ws_router.router, prefix=settings.api_v1_prefix)
 
 

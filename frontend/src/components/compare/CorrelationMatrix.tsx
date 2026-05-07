@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { CompareResponse } from '@/types/stock'
 
@@ -25,6 +26,7 @@ function corrColor(v: number): string {
 }
 
 export default function CorrelationMatrix({ data }: { data: CompareResponse }) {
+  const navigate = useNavigate()
   const matrix = useMemo(() => {
     const returns: Record<string, number[]> = {}
     data.series.forEach(s => {
@@ -56,9 +58,11 @@ export default function CorrelationMatrix({ data }: { data: CompareResponse }) {
             {tickers.map((rowT, i) => (
               <tr key={rowT}>
                 <td className="pr-2 py-1 text-text-muted font-semibold text-right">{rowT}</td>
-                {tickers.map((_, j) => (
+                {tickers.map((colT, j) => (
                   <td key={j} className="px-1 py-1 text-center">
-                    <span className={cn('inline-flex items-center justify-center w-12 h-7 rounded border text-[11px] font-semibold', corrColor(matrix[i][j]))}>
+                    <span onClick={() => { if (rowT !== colT) navigate(`/compare?tickers=${rowT},${colT}`) }}
+              style={{ cursor: rowT !== colT ? "pointer" : "default" }}
+              className={cn('inline-flex items-center justify-center w-12 h-7 rounded border text-[11px] font-semibold', corrColor(matrix[i][j]))}>
                       {matrix[i][j].toFixed(2)}
                     </span>
                   </td>
@@ -76,7 +80,8 @@ export default function CorrelationMatrix({ data }: { data: CompareResponse }) {
           { label: '−0.7–−0.3 Weak −',cls: 'bg-accent-amber/10 border-accent-amber/20 text-accent-amber' },
           { label: '≤ −0.7 Strong −', cls: 'bg-accent-red/10 border-accent-red/20 text-accent-red' },
         ].map(({ label, cls }) => (
-          <span key={label} className={cn('inline-flex items-center gap-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded border', cls)}>
+          <span key={label}
+              className={cn('inline-flex items-center gap-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded border', cls)}>
             {label}
           </span>
         ))}

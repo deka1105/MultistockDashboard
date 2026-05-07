@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Check, X } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, Check, X, Download } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer } from 'recharts'
 import { formatPrice, formatPct, getPriceClass, cn } from '@/lib/utils'
 import { useUpdatePosition, useDeletePosition, useMultiCandles } from '@/hooks/useStockData'
@@ -34,12 +34,30 @@ interface EditState {
   avg_cost: string
 }
 
+
+function exportToCSV(positions: EnrichedPosition[]) {
+  const headers = ['Ticker', 'Shares', 'Avg Cost', 'Current Price', 'Value', 'P&L $', 'P&L %', 'Today %', 'Weight %']
+  const rows = positions.map(p => [
+    p.ticker, p.shares, p.avg_cost, p.current_price,
+    p.value.toFixed(2), p.pnl.toFixed(2),
+    p.pnl_pct.toFixed(2), p.today_pct.toFixed(2), p.weight_pct.toFixed(2),
+  ])
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = 'holdings.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
 interface Props {
   portfolioId: number
   positions: EnrichedPosition[]
+  focusedTicker?: string | null
+  onFocusTicker?: (ticker: string) => void
 }
 
-export default function HoldingsTable({ portfolioId, positions }: Props) {
+export default function HoldingsTable({ portfolioId, positions, focusedTicker, onFocusTicker }: Props) {
   const navigate = useNavigate()
   const [sortKey, setSortKey] = useState<SortKey>('value')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -91,6 +109,12 @@ export default function HoldingsTable({ portfolioId, positions }: Props) {
         <p className="font-display font-semibold text-sm text-text-primary">
           Holdings <span className="font-mono text-[10px] text-text-muted ml-2">{positions.length} positions</span>
         </p>
+        {positions.length > 0 && (
+          <button onClick={() => exportToCSV(positions)}
+            className="flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-text-primary transition-colors">
+            <Download size={11} /> CSV
+          </button>
+        )}
       </div>
 
       {positions.length === 0 ? (

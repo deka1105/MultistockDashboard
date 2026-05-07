@@ -8,6 +8,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.services import finnhub as fh
+from app.services.finnhub import USE_MOCK
 from app.schemas.stock import (
     QuoteResponse, CandlesResponse, SearchResponse,
     NewsResponse, CompanyProfileResponse, BasicFinancialsResponse,
@@ -23,14 +24,26 @@ limiter = Limiter(key_func=get_remote_address)
 
 # ─── S&P 500 top 50 ───────────────────────────────────────────────────────────
 
-SP500_TOP50 = [
-    "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","BRK.B",
-    "LLY","TSLA","JPM","V","UNH","XOM","MA","AVGO","JNJ",
-    "PG","HD","MRK","COST","ABBV","CVX","KO","PEP","WMT",
-    "BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN","MCD","NKE",
-    "ADBE","TMO","ABT","TXN","NEE","PM","RTX","QCOM","HON",
-    "IBM","AMGN","GE","CAT","SPGI","INTU",
+# Derive the market overview ticker list from the comprehensive TICKER_DB
+# Excludes ETFs for the market overview (keep it to individual stocks)
+from app.services.mock_data import TICKER_DB as _TICKER_DB, _TICKER_INDEX as _TICKER_IDX
+
+# Full stock universe (non-ETF) for market overview
+from app.services.mock_data import TICKER_DB as _TICKER_DB
+
+# Full stock universe (non-ETF) for market overview — 198 stocks
+SP500_TOP50 = [t["ticker"] for t in _TICKER_DB if t["type"] == "Common Stock"]
+
+# Compact alias for correlation heatmaps
+SP50 = [
+    "AAPL","MSFT","NVDA","AMZN","META","GOOGL","TSLA","JPM","V","UNH",
+    "XOM","MA","AVGO","JNJ","PG","HD","MRK","COST","ABBV","CVX",
+    "KO","PEP","WMT","BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN",
+    "MCD","NKE","ADBE","TMO","ABT","TXN","NEE","PM","RTX","QCOM",
+    "HON","LIN","IBM","GS","CAT","AMGN","SBUX","INTU","LOW","DE",
 ]
+# Preserve backward compat alias used in correlation heatmaps
+SP50 = SP500_TOP50[:50]
 
 SERIES_COLORS = [
     "#6366f1","#f59e0b","#10b981","#ef4444",
@@ -192,7 +205,7 @@ async def compare_stocks(
 # ─── Market Overview ─────────────────────────────────────────────────────────
 
 @router.get("/market/overview", response_model=MarketOverviewResponse)
-@limiter.limit("10/minute")
+@limiter.limit("100/minute")
 async def get_market_overview(request: Request):
     key = market_overview_key()
     cached = await cache_get(key)
@@ -236,3 +249,91 @@ async def get_market_overview(request: Request):
     )
     await cache_set(key, result.model_dump(), ttl=settings.cache_ttl_market_overview)
     return result
+
+
+@router.get("/options/{ticker}")
+async def get_options_chain(
+    ticker: str,
+    request: Request,
+):
+    """
+    Options chain for a ticker. Returns strikes × expiries grid
+    with call/put OI, volume, IV and put/call ratio per expiry.
+    Falls back to deterministic mock data when Finnhub key is absent.
+    """
+    ticker = ticker.upper()
+    cache_key = f"options:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    if USE_MOCK:
+        try:
+            quote = await fh.get_quote(ticker)
+            price = quote.get("price")
+        except Exception:
+            price = None
+        from app.services.mock_data import get_mock_options_chain
+        data = get_mock_options_chain(ticker, price)
+        await cache_set(cache_key, data, ttl=300)
+        return data
+
+    try:
+        from datetime import date, timedelta
+        exp_date = (date.today() + timedelta(days=30)).isoformat()
+        raw = await fh.client.get("/stock/option-chain", params={"symbol": ticker, "expiration": exp_date})
+        raw.raise_for_status()
+        payload = raw.json()
+        await cache_set(cache_key, payload, ttl=300)
+        return payload
+    except Exception:
+        from app.services.mock_data import get_mock_options_chain
+        data = get_mock_options_chain(ticker)
+        await cache_set(cache_key, data, ttl=300)
+        return data
+
+
+@router.get("/institutional/{ticker}")
+async def get_institutional_ownership(ticker: str):
+    """
+    Institutional ownership summary + top holders + insider transactions.
+    Serves deterministic mock data when FINNHUB_API_KEY is absent.
+    """
+    ticker = ticker.upper()
+    cache_key = f"institutional:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    from app.services.mock_data import get_mock_institutional
+    data = get_mock_institutional(ticker)
+    await cache_set(cache_key, data, ttl=3600 * 4)
+    return data
+
+
+@router.get("/insider/{ticker}")
+async def get_insider_transactions(ticker: str):
+    """
+    Insider buy/sell transactions for the last 12 months.
+    Falls back to deterministic mock.
+    """
+    ticker = ticker.upper()
+    cache_key = f"insider:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    if not USE_MOCK:
+        try:
+            raw = await fh.client.get("/stock/insider-transactions", params={"symbol": ticker})
+            raw.raise_for_status()
+            payload = raw.json()
+            await cache_set(cache_key, payload, ttl=3600 * 4)
+            return payload
+        except Exception:
+            pass
+
+    from app.services.mock_data import get_mock_insider_transactions
+    data = get_mock_insider_transactions(ticker)
+    await cache_set(cache_key, data, ttl=3600 * 4)
+    return data

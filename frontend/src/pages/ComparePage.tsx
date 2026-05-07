@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/useAppStore'
 import TickerChipInput from '@/components/compare/TickerChipInput'
 import CompareChart from '@/components/compare/CompareChart'
 import CorrelationMatrix from '@/components/compare/CorrelationMatrix'
+import SP500CorrelationHeatmap from '@/components/compare/SP500CorrelationHeatmap'
 import CompareSummaryTable from '@/components/compare/CompareSummaryTable'
 import { ChartSkeleton } from '@/components/common/Skeleton'
 import { ErrorCard } from '@/components/common/ErrorBoundary'
@@ -109,6 +110,11 @@ export default function ComparePage() {
           </div>
           <CompareSummaryTable data={data} />
           <CorrelationMatrix data={data} />
+
+          {/* Full S&P 50 correlation heatmap */}
+          <div className="card p-4">
+            <SP500CorrelationHeatmap condensed={false} />
+          </div>
         </div>
       ) : (
         <div className="card p-8 text-center text-text-muted text-sm">No data returned for selected tickers</div>

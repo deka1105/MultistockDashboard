@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # App
     app_env: str = "development"
+    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
     secret_key: str = "change_me"
     debug: bool = True
     app_name: str = "StockDash API"
@@ -51,6 +52,26 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def origins_list(self) -> list[str]:
+        """Parse comma-separated ALLOWED_ORIGINS env var into a list."""
+        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def asyncpg_database_url(self) -> str:
+        """
+        Render provides DATABASE_URL as postgresql://...
+        SQLAlchemy async requires postgresql+asyncpg://...
+        This property normalises either format.
+        """
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            # Heroku/Render legacy format
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
 
 
 @lru_cache

@@ -54,3 +54,7 @@ httpx[http2]==0.27.0
 # Phase 4 — NLP
 transformers==4.41.2
 torch==2.3.1         # CPU-only inference
+
+# Free real-time market data (no API key required)
+yfinance==0.2.38
+pandas>=2.0.0

@@ -50,6 +50,7 @@ class User(Base):
 
     watchlists: Mapped[list["Watchlist"]] = relationship("Watchlist", back_populates="user", cascade="all, delete-orphan")
     portfolios: Mapped[list["Portfolio"]] = relationship("Portfolio", back_populates="user", cascade="all, delete-orphan")
+    alerts: Mapped[list["Alert"]] = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
 
 
 # ─── Watchlists ───────────────────────────────────────────────────────────────
@@ -169,3 +170,65 @@ class PnLSnapshot(Base):
     daily_return_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     portfolio: Mapped["Portfolio"] = relationship("Portfolio", back_populates="snapshots")
+
+
+# ─── Alerts ───────────────────────────────────────────────────────────────────
+
+class AlertType(str, enum.Enum):
+    price_above    = "price_above"
+    price_below    = "price_below"
+    pct_move_day   = "pct_move_day"
+    rsi_above      = "rsi_above"
+    rsi_below      = "rsi_below"
+    ma_cross_above = "ma_cross_above"   # price crosses above MA50
+    ma_cross_below = "ma_cross_below"
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="alerts")
+    ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    alert_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    triggered_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ─── Earnings events ──────────────────────────────────────────────────────────
+
+class EarningsEvent(Base):
+    __tablename__ = "earnings_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    report_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    time_of_day: Mapped[str | None] = mapped_column(String(10), nullable=True)   # "pre" | "post" | "during"
+    eps_estimate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    eps_actual: Mapped[float | None] = mapped_column(Float, nullable=True)
+    revenue_estimate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    revenue_actual: Mapped[float | None] = mapped_column(Float, nullable=True)
+    surprise_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    beat_miss: Mapped[str | None] = mapped_column(String(10), nullable=True)    # "beat" | "miss" | "inline"
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class InstitutionalOwnership(Base):
+    """Quarterly institutional ownership snapshot — refreshed by Celery."""
+    __tablename__ = "institutional_ownership"
+
+    id:              Mapped[int]            = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ticker:          Mapped[str]            = mapped_column(String(16), nullable=False, index=True)
+    report_date:     Mapped[str]            = mapped_column(String(10), nullable=False)
+    inst_pct_float:  Mapped[float | None]   = mapped_column(Float, nullable=True)
+    num_holders:     Mapped[int | None]     = mapped_column(Integer, nullable=True)
+    qoq_change_pct:  Mapped[float | None]   = mapped_column(Float, nullable=True)
+    top_holder_name: Mapped[str | None]     = mapped_column(String(256), nullable=True)
+    top_holder_pct:  Mapped[float | None]   = mapped_column(Float, nullable=True)
+    raw_json:        Mapped[str | None]     = mapped_column(Text, nullable=True)
+    created_at:      Mapped[datetime]       = mapped_column(DateTime(timezone=True), server_default=func.now())

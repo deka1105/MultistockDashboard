@@ -348,3 +348,155 @@ async def get_pnl_history(portfolio_id: int, db: AsyncSession = Depends(get_db))
             for s in snaps
         ],
     }
+
+
+# ─── Phase 10 endpoints ───────────────────────────────────────────────────────
+
+@router.get("/{portfolio_id}/upcoming-earnings")
+async def get_portfolio_upcoming_earnings(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Earnings events for the next 30 days, filtered to tickers held in this portfolio.
+    Re-uses the earnings_events table populated by the earnings router.
+    """
+    await _ensure_guest_user(db)
+    # Get tickers in this portfolio
+    pos_result = await db.execute(
+        select(Position)
+        .join(Portfolio)
+        .where(Portfolio.user_id == GUEST_ID, Portfolio.id == portfolio_id)
+    )
+    positions = pos_result.scalars().all()
+    if not positions:
+        return {"events": [], "tickers": []}
+
+    held_tickers = {p.ticker for p in positions}
+
+    # Fetch from earnings endpoint (uses mock or Finnhub)
+    from app.routers.earnings import _fetch_calendar
+    all_events = await _fetch_calendar(30)
+    portfolio_events = [e for e in all_events if e["ticker"] in held_tickers]
+
+    return {
+        "events":  portfolio_events,
+        "tickers": sorted(held_tickers),
+        "count":   len(portfolio_events),
+    }
+
+
+@router.get("/{portfolio_id}/active-alerts")
+async def get_portfolio_alerts(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Active + recently triggered alerts for tickers held in this portfolio.
+    """
+    await _ensure_guest_user(db)
+    pos_result = await db.execute(
+        select(Position)
+        .join(Portfolio)
+        .where(Portfolio.user_id == GUEST_ID, Portfolio.id == portfolio_id)
+    )
+    positions = pos_result.scalars().all()
+    held_tickers = {p.ticker for p in positions}
+
+    if not held_tickers:
+        return {"active": [], "triggered": []}
+
+    from app.models.models import Alert
+    from datetime import timezone, timedelta, datetime
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+
+    alert_result = await db.execute(
+        select(Alert).where(
+            Alert.user_id == GUEST_ID,
+            Alert.ticker.in_(held_tickers),
+        )
+    )
+    all_alerts = alert_result.scalars().all()
+
+    def _fmt(a: Alert) -> dict:
+        return {
+            "id":             a.id,
+            "ticker":         a.ticker,
+            "alert_type":     a.alert_type,
+            "threshold":      a.threshold,
+            "is_active":      a.is_active,
+            "triggered_at":   a.triggered_at.isoformat() if a.triggered_at else None,
+            "triggered_price": getattr(a, "triggered_price", None),
+            "created_at":     a.created_at.isoformat() if a.created_at else None,
+        }
+
+    active    = [_fmt(a) for a in all_alerts if a.is_active]
+    triggered = [
+        _fmt(a) for a in all_alerts
+        if not a.is_active
+        and a.triggered_at
+        and a.triggered_at.replace(tzinfo=timezone.utc) >= cutoff
+    ]
+    triggered.sort(key=lambda x: x["triggered_at"] or "", reverse=True)
+
+    return {"active": active, "triggered": triggered[:5]}
+
+
+@router.get("/{portfolio_id}/screener-preview")
+async def get_portfolio_screener_preview(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns top-5 screener results using the 'high_momentum' preset,
+    annotated with which results overlap with portfolio holdings.
+    Runs inline (does not depend on screener router internals).
+    """
+    await _ensure_guest_user(db)
+
+    # Get held tickers for this portfolio
+    pos_result = await db.execute(
+        select(Position)
+        .join(Portfolio)
+        .where(Portfolio.user_id == GUEST_ID, Portfolio.id == portfolio_id)
+    )
+    positions  = pos_result.scalars().all()
+    held_tickers = {p.ticker for p in positions}
+
+    # Fetch live data for SP500_TOP50 (same set screener uses)
+    from app.services import finnhub as fh
+    from app.services.mock_data import get_mock_quote, get_mock_financials
+
+    SP50 = [
+        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","TSLA","JPM","V","UNH",
+        "XOM","MA","AVGO","JNJ","PG","HD","MRK","COST","ABBV","CVX",
+        "KO","PEP","WMT","BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN",
+    ]
+
+    quotes = await asyncio.gather(*[fh.get_quote(t) for t in SP50], return_exceptions=True)
+
+    rows = []
+    for ticker, q in zip(SP50, quotes):
+        qd = q if isinstance(q, dict) else {}
+        change_pct = qd.get("change_pct") or 0
+        price      = qd.get("price")
+        # High-momentum filter: change_pct > 0 (positive today)
+        if change_pct > 0 and price:
+            rows.append({
+                "ticker":       ticker,
+                "price":        round(price, 2),
+                "change_pct":   round(change_pct, 2),
+                "in_portfolio": ticker in held_tickers,
+            })
+
+    # Sort: portfolio tickers first, then by momentum (highest change_pct)
+    rows.sort(key=lambda x: (not x["in_portfolio"], -x["change_pct"]))
+    top5 = rows[:5]
+
+    return {
+        "results":       top5,
+        "preset":        "high_momentum",
+        "held_tickers":  sorted(held_tickers),
+        "overlap_count": sum(1 for r in top5 if r["in_portfolio"]),
+        "total_matches": len(rows),
+    }

@@ -9,8 +9,15 @@ import { useWebSocket } from '@/hooks/useWebSocket'
 import QuoteCard from '@/components/stocks/QuoteCard'
 import { StatsRow, WeekRangeBar, FinancialGrid } from '@/components/stocks/StatsRow'
 import PriceChart, { TimeRangeSelector, ChartTypeToggle, MAToggles } from '@/components/charts/PriceChart'
+import IndicatorControls from '@/components/indicators/IndicatorControls'
 import NewsPanel from '@/components/news/NewsPanel'
 import SentimentPanel from '@/components/sentiment/SentimentPanel'
+import EarningsHistoryCard from '@/components/earnings/EarningsHistoryCard'
+import InlineAlertCreator from '@/components/alerts/InlineAlertCreator'
+import CorrelatedMoversCard from '@/components/compare/CorrelatedMoversCard'
+import OptionsFlowHeatmap from '@/components/options/OptionsFlowHeatmap'
+import { PatternHistoryTable } from '@/components/patterns/PatternAnnotations'
+import InstitutionalOwnershipCard from '@/components/institutional/InstitutionalOwnershipCard'
 import { ErrorCard } from '@/components/common/ErrorBoundary'
 import {
   QuoteCardSkeleton, ChartSkeleton, StatsSkeleton,
@@ -66,6 +73,12 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Options flow heatmap */}
+      <OptionsFlowHeatmap ticker={T} />
+
+      {/* Inline alert creator */}
+      <InlineAlertCreator ticker={T} />
+
       {/* Chart + News + Sentiment */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
@@ -80,8 +93,8 @@ export default function DashboardPage() {
                     <span className="font-display font-semibold text-sm text-text-primary">{T} Price</span>
                     <ChartTypeToggle />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <MAToggles />
+                  <div className="flex items-center gap-2">
+                    <IndicatorControls timeRange={timeRange} />
                     <TimeRangeSelector />
                   </div>
                 </div>
@@ -107,9 +120,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Key metrics + Company info */}
+      {/* Key metrics + Company info + Earnings + Institutional */}
       {finQ.data && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-4">
           <FinancialGrid financials={finQ.data} />
           <div className="card p-4">
             <p className="stat-label mb-3">Company</p>
@@ -137,6 +150,9 @@ export default function DashboardPage() {
                 </div>
               ) : null}
           </div>
+          <EarningsHistoryCard ticker={T} />
+          <InstitutionalOwnershipCard ticker={T} />
+          <CorrelatedMoversCard ticker={T} />
         </div>
       )}
     </div>
