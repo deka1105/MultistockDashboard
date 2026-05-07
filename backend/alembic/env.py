@@ -1,11 +1,18 @@
+"""
+Alembic migration environment.
+
+IMPORTANT: This file reads DATABASE_URL directly from os.environ —
+NOT from pydantic-settings or any .env file.
+This ensures Render's injected DATABASE_URL is always used in production.
+"""
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Import all models so Alembic can detect schema changes
+# Import all models so Alembic can auto-detect schema changes
 from app.models.models import Base  # noqa: F401
-from app.core.config import settings
 
 config = context.config
 
@@ -14,14 +21,51 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Alembic uses a plain sync psycopg2 connection — async is not needed for migrations.
-# Strip +asyncpg and replace with +psycopg2 for the sync driver.
-sync_url = settings.database_url.replace("+asyncpg", "+psycopg2")
-config.set_main_option("sqlalchemy.url", sync_url)
+
+def _get_sync_db_url() -> str:
+    """
+    Build a psycopg2 (synchronous) connection URL for Alembic.
+
+    Priority:
+      1. DATABASE_URL env var (Render injects this automatically)
+      2. Fallback to alembic.ini sqlalchemy.url (for local dev only)
+
+    URL normalisation:
+      postgresql://...        → postgresql+psycopg2://...   (Render format)
+      postgresql+asyncpg://...→ postgresql+psycopg2://...   (app runtime format)
+      postgres://...          → postgresql+psycopg2://...   (legacy Heroku format)
+    """
+    url = os.environ.get("DATABASE_URL", "").strip()
+
+    if not url:
+        # Fall back to alembic.ini (local docker-compose only)
+        url = config.get_main_option("sqlalchemy.url") or ""
+
+    if not url:
+        raise ValueError(
+            "DATABASE_URL is not set. "
+            "Set it in your environment or in alembic.ini for local dev."
+        )
+
+    # Normalise scheme → synchronous psycopg2 driver
+    url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    url = url.replace("postgres+asyncpg://",   "postgresql+psycopg2://")
+    url = url.replace("postgres://",           "postgresql+psycopg2://")
+
+    # If it's just postgresql:// (no driver suffix), add psycopg2
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    return url
+
+
+# Override alembic.ini URL with the normalised runtime URL
+_sync_url = _get_sync_db_url()
+config.set_main_option("sqlalchemy.url", _sync_url)
 
 
 def run_migrations_offline() -> None:
-    """Run migrations without a live DB connection (generates SQL script)."""
+    """Generate SQL script without a live DB connection."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,

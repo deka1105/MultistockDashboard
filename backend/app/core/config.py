@@ -4,10 +4,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Load .env file in development only — never in production (APP_ENV=production).
+        # In production (Render), environment variables are injected by the platform.
+        # Reading .env in production risks using stale Docker Compose values.
+        env_file=None if __import__("os").environ.get("APP_ENV") == "production" else ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",   # ignore POSTGRES_USER etc. used by docker-compose but not needed in app
+        extra="ignore",
     )
 
     # App
