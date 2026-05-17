@@ -72,8 +72,7 @@ services:
   - type: worker
     name: stockdash-worker
     runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: backend/Dockerfile
     dockerContext: backend
     plan: starter
     autoDeploy: true
