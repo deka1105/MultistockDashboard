@@ -1,35 +1,17 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# StockDash — Render Blueprint
-#
-# Repo structure:
-#   repo-root/
-#     backend/          ← dockerContext for Docker services
-#       Dockerfile
-#       requirements.txt
-#       entrypoint.sh
-#       app/
-#     frontend/         ← rootDir for static site
-#       package.json
-#       src/
-#     render.yaml       ← this file (at repo root)
-#
-# Deploy: dashboard.render.com → New → Blueprint Instance
-# ─────────────────────────────────────────────────────────────────────────────
-
 services:
 
-  # ── Redis Key Value ──────────────────────────────────────────────────────────
+  # ── Redis ─────────────────────────────────────────────────────────────────
   - type: keyvalue
     name: stockdash-redis
     plan: free
     maxmemoryPolicy: noeviction
 
-  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  # ── FastAPI ───────────────────────────────────────────────────────────────
   - type: web
     name: stockdash-api
     runtime: docker
-    dockerfilePath: backend/Dockerfile
     dockerContext: backend
+    dockerfilePath: ./Dockerfile
     plan: starter
     healthCheckPath: /health
     autoDeploy: true
@@ -63,17 +45,14 @@ services:
         value: https://stockdash-frontend.onrender.com
       - key: FINNHUB_API_KEY
         value: ""
-    # startCommand is run as: bash -c "command"
-    # $PORT is set by Render automatically (usually 10000)
-    # ./entrypoint.sh handles migrations then starts uvicorn
     startCommand: ./entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers --forwarded-allow-ips='*'
 
-  # ── Celery Worker ────────────────────────────────────────────────────────────
+  # ── Celery Worker ─────────────────────────────────────────────────────────
   - type: worker
     name: stockdash-worker
     runtime: docker
-    dockerfilePath: backend/Dockerfile
     dockerContext: backend
+    dockerfilePath: ./Dockerfile
     plan: starter
     autoDeploy: true
     envVars:
@@ -102,15 +81,14 @@ services:
           property: connectionString
       - key: FINNHUB_API_KEY
         value: ""
-    # Workers do NOT run migrations (entrypoint.sh skips them when $1 != uvicorn)
     startCommand: ./entrypoint.sh celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
 
-  # ── Celery Beat ──────────────────────────────────────────────────────────────
+  # ── Celery Beat ───────────────────────────────────────────────────────────
   - type: worker
     name: stockdash-beat
     runtime: docker
-    dockerfilePath: backend/Dockerfile
     dockerContext: backend
+    dockerfilePath: ./Dockerfile
     plan: starter
     autoDeploy: true
     envVars:
@@ -141,7 +119,7 @@ services:
         value: ""
     startCommand: ./entrypoint.sh celery -A app.workers.celery_app beat --loglevel=info
 
-  # ── React Frontend (Static Site) ─────────────────────────────────────────────
+  # ── React Frontend (Static) ───────────────────────────────────────────────
   - type: web
     name: stockdash-frontend
     runtime: static
@@ -158,12 +136,11 @@ services:
         name: X-Content-Type-Options
         value: nosniff
     routes:
-      # SPA fallback — all paths serve index.html (React Router handles routing)
       - type: rewrite
         source: /*
         destination: /index.html
 
-# ── Managed PostgreSQL ────────────────────────────────────────────────────────
+# ── PostgreSQL ────────────────────────────────────────────────────────────
 databases:
   - name: stockdash-db
     databaseName: stockdash
