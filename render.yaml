@@ -3,7 +3,7 @@
 #
 # Repo structure:
 #   repo-root/
-#     backend/          ← rootDir for Docker services
+#     backend/          ← dockerContext for Docker services
 #       Dockerfile
 #       requirements.txt
 #       entrypoint.sh
