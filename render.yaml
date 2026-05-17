@@ -109,8 +109,7 @@ services:
   - type: worker
     name: stockdash-beat
     runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: backend/Dockerfile
     dockerContext: backend
     plan: starter
     autoDeploy: true
