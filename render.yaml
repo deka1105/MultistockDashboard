@@ -75,7 +75,7 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerContext: backend
     plan: starter
     autoDeploy: true
     envVars:
