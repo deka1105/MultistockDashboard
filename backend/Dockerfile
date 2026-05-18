@@ -31,29 +31,21 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Write entrypoint inline — guards against build-context file-drop issues on Render
-RUN python3 -c "
-import os, textwrap
-script = textwrap.dedent('''
-    #!/bin/bash
-    set -e
-    trap 'echo SIGTERM; kill \$PID 2>/dev/null; exit 0' SIGTERM SIGINT
-    if [[ \"\$1\" == \"uvicorn\" ]]; then
-        echo \"Running database migrations...\"
-        RETRIES=0
-        until alembic upgrade head; do
-            RETRIES=\$((RETRIES+1))
-            if [ \"\$RETRIES\" -ge 10 ]; then
-                echo \"Migrations failed after 10 attempts.\"; exit 1
-            fi
-            echo \"   Attempt \$RETRIES failed - retrying in 5s...\"; sleep 5
-        done
-        echo \"Migrations complete\"
-    fi
-    exec \"\$@\"
-''').lstrip()
-open('entrypoint.sh', 'w').write(script)
-os.chmod('entrypoint.sh', 0o755)
-"
+RUN { \
+    echo '#!/bin/sh'; \
+    echo 'set -e'; \
+    echo 'if [ "$1" = "uvicorn" ]; then'; \
+    echo '  echo "Running migrations..."'; \
+    echo '  RETRIES=0'; \
+    echo '  until alembic upgrade head; do'; \
+    echo '    RETRIES=$((RETRIES+1))'; \
+    echo '    [ "$RETRIES" -ge 10 ] && { echo "Migrations failed"; exit 1; }'; \
+    echo '    echo "Retry $RETRIES in 5s..."; sleep 5'; \
+    echo '  done'; \
+    echo '  echo "Migrations complete"'; \
+    echo 'fi'; \
+    echo 'exec "$@"'; \
+    } > entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
