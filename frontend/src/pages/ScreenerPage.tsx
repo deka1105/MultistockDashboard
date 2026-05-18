@@ -109,6 +109,11 @@ export default function ScreenerPage() {
     }
   }, [filters])
 
+  const { data: presetsData } = useScreenerPresets()
+  const { data: fieldsData }  = useScreenerFields()
+  const { data, isLoading, refetch } = useScreener(filters, sortBy, sortDir, page)
+  const { add: quickAdd }     = useQuickWatchlist()
+
   // TopBar "Export CSV" dispatch
   useEffect(() => {
     const handler = (e: Event) => {
@@ -130,11 +135,6 @@ export default function ScreenerPage() {
     window.addEventListener('stockdash:export-csv', handler)
     return () => window.removeEventListener('stockdash:export-csv', handler)
   }, [data])
-
-  const { data: presetsData } = useScreenerPresets()
-  const { data: fieldsData }  = useScreenerFields()
-  const { data, isLoading, refetch } = useScreener(filters, sortBy, sortDir, page)
-  const { add: quickAdd }     = useQuickWatchlist()
 
   const fields = fieldsData?.fields ?? []
 

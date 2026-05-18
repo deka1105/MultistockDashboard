@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import type { Quote, CandlesResponse, SearchResponse, NewsArticle, CompanyProfile, BasicFinancials, TimeRange } from '@/types/stock'
@@ -484,7 +485,7 @@ export function useWebSocketStatus() {
   const [, rerender] = useState(0)
 
   useEffect(() => {
-    const fn = () => rerender(n => n + 1)
+    const fn = () => rerender((n: number) => n + 1)
     _wsListeners.add(fn)
     return () => { _wsListeners.delete(fn) }
   }, [])

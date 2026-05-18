@@ -137,6 +137,8 @@ export const useAppStore = create<AppState>()(
       // ── Patterns ─────────────────────────────────────────────────────────────
       showPatterns: false,
       togglePatterns: () => set((s) => ({ showPatterns: !s.showPatterns })),
+      showOptionsFlow: false,
+      toggleOptionsFlow: () => set((s) => ({ showOptionsFlow: !s.showOptionsFlow })),
 
       // ── Stochastic ───────────────────────────────────────────────────────────
       stochK: 14,

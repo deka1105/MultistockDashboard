@@ -33,6 +33,13 @@ export default function PortfolioPage() {
   const [focusedTicker, setFocusedTicker] = useState<string | null>(null)
   const [tickerMenuOpen, setTickerMenuOpen] = useState(false)
 
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+    isError,
+    refetch,
+  } = usePortfolioSummary(activeId)
+
   // Listen for TopBar "Export CSV" dispatch
   useEffect(() => {
     const handler = (e: Event) => {
@@ -69,13 +76,6 @@ export default function PortfolioPage() {
       })
     }
   }, [loadingList, portfolios, initialised])
-
-  const {
-    data: summary,
-    isLoading: loadingSummary,
-    isError,
-    refetch,
-  } = usePortfolioSummary(activeId)
 
   const { data: historyData } = usePortfolioHistory(activeId)
   const sparkline = historyData?.snapshots?.map((s: any) => s.total_value) ?? []

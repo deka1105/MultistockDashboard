@@ -27,7 +27,7 @@ import {
 export default function DashboardPage() {
   const { ticker }   = useParams<{ ticker: string }>()
   const navigate     = useNavigate()
-  const { timeRange, addRecentTicker } = useAppStore()
+  const { timeRange, addRecentTicker, showOptionsFlow } = useAppStore()
   const T     = ticker?.toUpperCase() ?? 'AAPL'
   const store = useAppStore()
 
