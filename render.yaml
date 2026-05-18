@@ -43,7 +43,7 @@ services:
           name: stockdash-redis
           property: connectionString
       - key: ALLOWED_ORIGINS
-        value: https://stockdash-frontend.onrender.com
+        value: https://stockdash-frontend.onrender.com,https://multistockdashboard.onrender.com
       - key: FINNHUB_API_KEY
         value: ""
     dockerCommand: bash entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers --forwarded-allow-ips='*'
