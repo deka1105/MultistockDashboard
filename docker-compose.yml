@@ -5,6 +5,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS: requirements.dev.txt
     container_name: stockdash_api
     ports:
       - "8000:8000"
@@ -23,6 +25,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS: requirements.dev.txt
     container_name: stockdash_worker
     volumes:
       - ./backend:/code
@@ -39,6 +43,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS: requirements.dev.txt
     container_name: stockdash_beat
     volumes:
       - ./backend:/code

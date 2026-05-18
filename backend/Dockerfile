@@ -23,9 +23,10 @@ RUN apt-get update \
        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps (cached layer — only rebuilds when requirements.txt changes)
-COPY requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+# Install Python deps (cached layer — only rebuilds when requirements file changes)
+ARG REQUIREMENTS=requirements.txt
+COPY requirements.txt requirements.dev.txt ./
+RUN pip install -r ${REQUIREMENTS}
 
 # Copy application source
 COPY . .
