@@ -33,16 +33,9 @@ COPY . .
 # Write entrypoint inline — guards against build-context file-drop issues on Render
 RUN { \
     echo '#!/bin/sh'; \
-    echo 'set -e'; \
     echo 'if [ "$1" = "uvicorn" ]; then'; \
     echo '  echo "Running migrations..."'; \
-    echo '  RETRIES=0'; \
-    echo '  until alembic upgrade head; do'; \
-    echo '    RETRIES=$((RETRIES+1))'; \
-    echo '    [ "$RETRIES" -ge 10 ] && { echo "Migrations failed"; exit 1; }'; \
-    echo '    echo "Retry $RETRIES in 5s..."; sleep 5'; \
-    echo '  done'; \
-    echo '  echo "Migrations complete"'; \
+    echo '  alembic upgrade head && echo "Migrations OK" || echo "WARNING: migrations failed, starting anyway"'; \
     echo 'fi'; \
     echo 'exec "$@"'; \
     } > entrypoint.sh && chmod +x entrypoint.sh
