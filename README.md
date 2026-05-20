@@ -1,6 +1,42 @@
-# 📈 Multi-Stock Dynamic Dashboard — SaaS Development Roadmap
+# 📈 Multi-Stock Dynamic Dashboard
 
-**Stack:** React (Vite) · FastAPI · Recharts · PostgreSQL · Redis · Finnhub · Reddit API · X (Twitter) API · Docker · Railway / Render  
+> Real-time stock dashboard with multi-ticker comparison, portfolio P&L, technical indicators, sentiment analysis, options flow, and earnings calendar.
+
+## ⬇️ Download & Run Locally
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/). Pick your platform:
+
+| Platform | Download |
+|---|---|
+| **macOS** | [Download Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) |
+| **Windows** | [Download Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) |
+| **Ubuntu** | [Download Docker Desktop for Ubuntu](https://docs.docker.com/desktop/setup/install/linux/ubuntu/) |
+
+Once Docker is running:
+
+```bash
+git clone https://github.com/deka1105/MultistockDashboard.git
+cd MultistockDashboard
+docker compose up --build
+```
+
+Then open **http://localhost:5173** in your browser.
+
+> **No API keys needed** — the app runs in mock mode by default with realistic simulated data.
+
+---
+
+## 🌐 Live Demo
+
+**[https://stockdash-frontend.onrender.com](https://stockdash-frontend.onrender.com)**
+
+API: [https://multistockdashboard.onrender.com](https://multistockdashboard.onrender.com/docs)
+
+---
+
+## 🗺️ Project Overview
+
+**Stack:** React (Vite) · FastAPI · Recharts · PostgreSQL · Redis · Finnhub · Reddit API · X (Twitter) API · Docker · Render  
 **Goal:** Production-grade SaaS stock dashboard with real-time data, multi-stock comparison, watchlists, news feed, social sentiment, portfolio analytics, and professional-grade technical analysis tools.  
 **Total Estimated Timeline:** 26–34 weeks (solo developer, part-time)  
 **Current Status:** Phases 1–9 complete · 242 backend tests · 158 frontend tests · Phase 10–11 in roadmap · Phase 5 deferred
