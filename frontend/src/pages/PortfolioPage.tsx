@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Briefcase, Plus, FolderPlus, Trash2, RefreshCw, ChevronDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Briefcase, Plus, FolderPlus, Trash2, RefreshCw, ChevronDown, ArrowUpRight } from 'lucide-react'
 import {
   usePortfolios, usePortfolioSummary, usePortfolioHistory,
   useCreatePortfolio, useDeletePortfolio, useCandles, useCompare,
