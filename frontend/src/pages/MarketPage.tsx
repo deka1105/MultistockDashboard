@@ -79,7 +79,10 @@ export default function MarketPage() {
     return set
   }, [watchlists])
 
-  const [viewMode, setViewMode] = useState<'table' | 'heatmap'>('table')
+  const [searchParams] = useSearchParams()
+  const [viewMode, setViewMode] = useState<'table' | 'heatmap'>(
+    searchParams.get('view') === 'heatmap' ? 'heatmap' : 'table'
+  )
   const [sortKey, setSortKey] = useState<SortKey>('market_cap')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sector,  setSector]  = useState('All')
