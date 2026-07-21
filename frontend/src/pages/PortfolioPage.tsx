@@ -20,6 +20,7 @@ import SectorHeatmap           from '@/components/market/SectorHeatmap'
 import CorrelationMatrix       from '@/components/compare/CorrelationMatrix'
 import { Skeleton }            from '@/components/common/Skeleton'
 import { ErrorCard }           from '@/components/common/ErrorBoundary'
+import { useAppStore }         from '@/store/useAppStore'
 import { cn }                  from '@/lib/utils'
 
 export default function PortfolioPage() {
