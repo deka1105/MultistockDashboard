@@ -42,6 +42,25 @@ export default function DashboardPage() {
   // WebSocket live tick — passed to QuoteCard + PriceChart
   const { tick } = useWebSocket(T)
 
+  // Context-aware "Export CSV" from the header — exports the chart's candle data
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail?.page !== 'dashboard') return
+      const rows = candlesQ.data?.candles ?? []
+      if (!rows.length) return
+      const headers = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+      const body = rows.map(c => [c.date, c.open, c.high, c.low, c.close, c.volume])
+      const csv = [headers, ...body].map(r => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a'); a.href = url
+      a.download = `${T}-${timeRange}-candles.csv`; a.click()
+      URL.revokeObjectURL(url)
+    }
+    window.addEventListener('stockdash:export-csv', handler)
+    return () => window.removeEventListener('stockdash:export-csv', handler)
+  }, [candlesQ.data, T, timeRange])
+
   if (!ticker) { navigate('/dashboard/AAPL', { replace: true }); return null }
 
   const candles    = candlesQ.data?.candles ?? []
