@@ -177,8 +177,9 @@ export default function TopBar() {
     document.title = title
   }, [location.pathname])
 
-  const isOnPortfolio = location.pathname.startsWith('/portfolio')
   const isOnScreener  = location.pathname.startsWith('/screener')
+  // Export CSV is only wired up on pages with a handler (portfolio, screener, dashboard)
+  const canExport = ['/portfolio', '/screener', '/dashboard'].some(p => location.pathname.startsWith(p))
 
   return (
     <header role="banner" aria-label="Application header" className="h-14 border-b border-bg-border bg-bg-surface/80 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0">
