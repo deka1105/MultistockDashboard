@@ -156,7 +156,7 @@ export default function PortfolioPage() {
           {(portfolios ?? []).map((p: any) => (
             <div key={p.id} className="flex items-center group">
               <button
-                onClick={() => { setActiveId(p.id); setFocusedTicker(null) }}
+                onClick={() => setActiveId(p.id)}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                   activeId === p.id
