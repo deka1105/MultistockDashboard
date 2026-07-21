@@ -84,14 +84,18 @@ export default function PortfolioPage() {
   const { data: historyData } = usePortfolioHistory(activeId)
   const sparkline = historyData?.snapshots?.map((s: any) => s.total_value) ?? []
 
-  // Set focusedTicker to best performer when summary loads
+  // Default the focused ticker to the best performer — but only when the persisted
+  // ticker is missing or no longer held in the active portfolio (10A).
   useEffect(() => {
-    if (!summary?.positions?.length || focusedTicker) return
-    const best = [...summary.positions].sort(
+    const positions = summary?.positions
+    if (!positions?.length) return
+    const held = positions.map((p: any) => p.ticker)
+    if (focusedTicker && held.includes(focusedTicker)) return
+    const best = [...positions].sort(
       (a: any, b: any) => (b.pnl_pct ?? 0) - (a.pnl_pct ?? 0)
     )[0]
     if (best) setFocusedTicker(best.ticker)
-  }, [summary])
+  }, [summary, focusedTicker])
 
   const positions   = summary?.positions ?? []
   const heldTickers = useMemo(() => positions.map((p: any) => p.ticker), [positions])
