@@ -31,8 +31,11 @@ export default function PortfolioPage() {
   const [activeId,      setActiveId]      = useState<number | null>(null)
   const [showAddPos,    setShowAddPos]    = useState(false)
   const [initialised,   setInitialised]   = useState(false)
-  const [focusedTicker, setFocusedTicker] = useState<string | null>(null)
   const [tickerMenuOpen, setTickerMenuOpen] = useState(false)
+
+  // Focused holding is persisted to the store so it survives a page refresh (10A)
+  const focusedTicker    = useAppStore((s) => s.focusedTicker)
+  const setFocusedTicker = useAppStore((s) => s.setFocusedTicker)
 
   const {
     data: summary,
