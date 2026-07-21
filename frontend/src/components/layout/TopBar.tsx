@@ -219,16 +219,18 @@ export default function TopBar() {
       {/* Right-side action buttons */}
       <div className="ml-auto flex items-center gap-2">
 
-        {/* Export CSV — context-aware */}
-        <button
-          onClick={handleExport}
-          aria-label="Export data as CSV"
-          title="Export data as CSV"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-bg-border text-text-secondary hover:text-text-primary hover:border-bg-hover hover:bg-bg-hover transition-colors text-xs font-medium"
-        >
-          <Download size={13} />
-          <span>Export CSV</span>
-        </button>
+        {/* Export CSV — context-aware, shown only where a handler exists */}
+        {canExport && (
+          <button
+            onClick={handleExport}
+            aria-label="Export data as CSV"
+            title="Export data as CSV"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-bg-border text-text-secondary hover:text-text-primary hover:border-bg-hover hover:bg-bg-hover transition-colors text-xs font-medium"
+          >
+            <Download size={13} />
+            <span>Export CSV</span>
+          </button>
+        )}
 
         {/* Run Screener CTA */}
         <button
