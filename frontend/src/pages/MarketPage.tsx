@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   BarChart3, ArrowUpDown, ArrowUp, ArrowDown,
   Star, StarOff, TrendingUp, TrendingDown,
