@@ -252,9 +252,14 @@ export default function PortfolioPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Sector Heatmap compact */}
             <div className="card p-4 flex flex-col gap-2 min-h-[220px]">
-              <p className="font-display font-semibold text-sm text-text-primary shrink-0">Sector Heatmap
-                <span className="ml-2 text-[9px] font-mono text-text-muted font-normal">S&P 500 · today</span>
-              </p>
+              <div className="flex items-start justify-between shrink-0">
+                <p className="font-display font-semibold text-sm text-text-primary">Sector Heatmap
+                  <span className="ml-2 text-[9px] font-mono text-text-muted font-normal">S&P 500 · today</span>
+                </p>
+                <Link to="/market?view=heatmap" className="flex items-center gap-0.5 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors">
+                  Full view <ArrowUpRight size={11} />
+                </Link>
+              </div>
               <div className="flex-1 overflow-hidden">
                 <SectorHeatmap compact />
               </div>
@@ -262,11 +267,16 @@ export default function PortfolioPage() {
 
             {/* RSI */}
             <div className="card p-4 flex flex-col gap-2 min-h-[220px]">
-              <div>
-                <p className="font-display font-semibold text-sm text-text-primary">
-                  RSI (14) — <span className="text-accent-cyan">{effectiveTicker}</span>
-                </p>
-                <p className="text-[9px] font-mono text-text-muted">Relative Strength Index · 3Mo</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-display font-semibold text-sm text-text-primary">
+                    RSI (14) — <span className="text-accent-cyan">{effectiveTicker}</span>
+                  </p>
+                  <p className="text-[9px] font-mono text-text-muted">Relative Strength Index · 3Mo</p>
+                </div>
+                <Link to={`/dashboard/${effectiveTicker}`} className="flex items-center gap-0.5 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors">
+                  Full chart <ArrowUpRight size={11} />
+                </Link>
               </div>
               {candles.length >= 15
                 ? <RSIPanel candles={candles} compact />
@@ -276,11 +286,16 @@ export default function PortfolioPage() {
 
             {/* MACD */}
             <div className="card p-4 flex flex-col gap-2 min-h-[220px]">
-              <div>
-                <p className="font-display font-semibold text-sm text-text-primary">
-                  MACD (12,26,9) — <span className="text-accent-cyan">{effectiveTicker}</span>
-                </p>
-                <p className="text-[9px] font-mono text-text-muted">Momentum Oscillator</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-display font-semibold text-sm text-text-primary">
+                    MACD (12,26,9) — <span className="text-accent-cyan">{effectiveTicker}</span>
+                  </p>
+                  <p className="text-[9px] font-mono text-text-muted">Momentum Oscillator</p>
+                </div>
+                <Link to={`/dashboard/${effectiveTicker}`} className="flex items-center gap-0.5 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors">
+                  Full chart <ArrowUpRight size={11} />
+                </Link>
               </div>
               {candles.length >= 27
                 ? <MACDPanel candles={candles} compact />
@@ -297,7 +312,9 @@ export default function PortfolioPage() {
             <div className="card p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <p className="font-display font-semibold text-sm text-text-primary">Correlation Matrix</p>
-                <span className="text-[9px] font-mono text-text-muted">30-day Pearson r</span>
+                <Link to={`/compare?tickers=${compareTickers.join(',')}`} className="flex items-center gap-0.5 text-[9px] font-mono text-text-muted hover:text-accent-cyan transition-colors">
+                  Add tickers <ArrowUpRight size={10} />
+                </Link>
               </div>
               {compareData
                 ? <CorrelationMatrix data={compareData} />
