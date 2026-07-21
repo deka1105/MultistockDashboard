@@ -75,6 +75,10 @@ interface AppState {
   // Recent tickers
   recentTickers: string[]
   addRecentTicker: (ticker: string) => void
+
+  // Portfolio Command Centre — focused holding driving the analysis widgets
+  focusedTicker: string | null
+  setFocusedTicker: (ticker: string | null) => void
 }
 
 export const useAppStore = create<AppState>()(
