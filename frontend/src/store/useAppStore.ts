@@ -171,6 +171,10 @@ export const useAppStore = create<AppState>()(
           recentTickers: [t, ...s.recentTickers.filter((x) => x !== t)].slice(0, 6),
         }))
       },
+
+      // ── Portfolio Command Centre ─────────────────────────────────────────────
+      focusedTicker: null,
+      setFocusedTicker: (ticker) => set({ focusedTicker: ticker ? ticker.toUpperCase() : null }),
     }),
     {
       name: 'stockdash-store',
