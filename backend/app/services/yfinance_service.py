@@ -149,11 +149,16 @@ async def yf_get_company_profile(ticker: str) -> dict[str, Any]:
         t    = yf.Ticker(ticker.upper())
         info = t.info  # this call can be slow
 
+        # yfinance reports marketCap in absolute currency units; Finnhub and the
+        # mock source report it in millions, which is the contract the frontend
+        # formatMarketCap() assumes. Normalise to millions here.
+        mc = info.get("marketCap")
+
         return {
             "ticker":       ticker.upper(),
             "company_name": info.get("longName") or info.get("shortName") or f"{ticker} Corp",
             "sector":       info.get("sector", "Technology"),
-            "market_cap":   info.get("marketCap"),
+            "market_cap":   round(mc / 1_000_000, 2) if mc else None,
             "logo_url":     info.get("logo_url"),
             "exchange":     info.get("exchange", "NASDAQ"),
             "ipo_date":     None,
