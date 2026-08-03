@@ -263,7 +263,7 @@ export default function TopBar() {
             : status === 'partial'       ? 'bg-accent-amber/10 border-accent-amber/20'
             : status === 'disconnected'  ? 'bg-accent-red/10 border-accent-red/20'
             : 'bg-bg-hover border-bg-border'
-          const label     = status === 'idle' ? 'LIVE' : 'LIVE'
+          const label     = 'LIVE'
           const animate   = status === 'connected' || status === 'partial'
           const tooltip   = status === 'idle'
             ? 'Real-time data · No active subscriptions'
