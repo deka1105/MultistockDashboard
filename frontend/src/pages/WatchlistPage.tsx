@@ -93,7 +93,10 @@ export default function WatchlistPage() {
     if (data?.candles) candlesMap[ticker] = data.candles
   })
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
