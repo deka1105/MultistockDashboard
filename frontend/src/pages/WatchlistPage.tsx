@@ -36,7 +36,8 @@ function SortableCard({ ticker, index, color, candles, onRemove }: {
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn('relative group', isDragging && 'z-50 opacity-80 scale-105')}>
       <div {...attributes} {...listeners}
-        className="absolute top-2 left-2 z-10 p-1 rounded cursor-grab active:cursor-grabbing text-text-muted opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity">
+        aria-label={`Reorder ${ticker}`}
+        className="absolute top-2 left-2 z-10 p-1 rounded cursor-grab active:cursor-grabbing text-text-muted opacity-0 group-hover:opacity-60 hover:!opacity-100 focus-visible:!opacity-100 focus-visible:ring-1 focus-visible:ring-accent-cyan transition-opacity">
         <GripVertical size={12} />
       </div>
       <WatchlistCard ticker={ticker} color={color} candles={candles} onRemove={onRemove} />
