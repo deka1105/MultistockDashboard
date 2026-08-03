@@ -75,7 +75,7 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
     Fetch OHLCV candles via yfinance.
     Returns the same shape as finnhub.get_candles().
     """
-    try:
+    def _fetch() -> dict[str, Any]:
         import yfinance as yf
         period, interval = _RANGE_MAP.get(range_key, ("1mo", "1d"))
         t = yf.Ticker(ticker.upper())
@@ -98,6 +98,9 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
             })
 
         return {"ticker": ticker.upper(), "range": range_key, "candles": candles}
+
+    try:
+        return await asyncio.to_thread(_fetch)
     except Exception as e:
         logger.warning(f"yfinance candles failed for {ticker}: {e}")
         from app.services.mock_data import get_mock_candles
