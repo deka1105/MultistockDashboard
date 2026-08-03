@@ -58,15 +58,27 @@ export default function CorrelationMatrix({ data }: { data: CompareResponse }) {
             {tickers.map((rowT, i) => (
               <tr key={rowT}>
                 <td className="pr-2 py-1 text-text-muted font-semibold text-right">{rowT}</td>
-                {tickers.map((colT, j) => (
-                  <td key={j} className="px-1 py-1 text-center">
-                    <span onClick={() => { if (rowT !== colT) navigate(`/compare?tickers=${rowT},${colT}`) }}
-              style={{ cursor: rowT !== colT ? "pointer" : "default" }}
-              className={cn('inline-flex items-center justify-center w-12 h-7 rounded border text-[11px] font-semibold', corrColor(matrix[i][j]))}>
-                      {matrix[i][j].toFixed(2)}
-                    </span>
-                  </td>
-                ))}
+                {tickers.map((colT, j) => {
+                  const cellCls = cn(
+                    'inline-flex items-center justify-center w-12 h-7 rounded border text-[11px] font-semibold',
+                    corrColor(matrix[i][j]),
+                  )
+                  return (
+                    <td key={j} className="px-1 py-1 text-center">
+                      {rowT !== colT ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/compare?tickers=${rowT},${colT}`)}
+                          aria-label={`Compare ${rowT} and ${colT} — correlation ${matrix[i][j].toFixed(2)}`}
+                          className={cn(cellCls, 'cursor-pointer')}>
+                          {matrix[i][j].toFixed(2)}
+                        </button>
+                      ) : (
+                        <span className={cellCls}>{matrix[i][j].toFixed(2)}</span>
+                      )}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
