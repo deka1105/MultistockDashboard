@@ -29,26 +29,16 @@ _RANGE_MAP = {
 }
 
 
-def _run_sync(coro):
-    """Run async call in a thread-safe way from sync context."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result(timeout=10)
-        return loop.run_until_complete(coro)
-    except Exception:
-        return None
-
-
 async def yf_get_quote(ticker: str) -> dict[str, Any]:
     """
     Fetch live quote via yfinance.
     Returns the same shape as finnhub.get_quote().
+
+    yfinance is a synchronous, network-bound library. Run it in a worker
+    thread via asyncio.to_thread so it never blocks the event loop (and with
+    it every other concurrent request).
     """
-    try:
+    def _fetch() -> dict[str, Any]:
         import yfinance as yf
         t = yf.Ticker(ticker.upper())
 
@@ -71,6 +61,9 @@ async def yf_get_quote(ticker: str) -> dict[str, Any]:
             "volume":     int(fi.three_month_average_volume or 0),
             "timestamp":  int(datetime.now(timezone.utc).timestamp()),
         }
+
+    try:
+        return await asyncio.to_thread(_fetch)
     except Exception as e:
         logger.warning(f"yfinance quote failed for {ticker}: {e}")
         from app.services.mock_data import get_mock_quote
