@@ -52,12 +52,21 @@ async def cache_delete(key: str) -> None:
 
 
 async def cache_delete_pattern(pattern: str) -> None:
-    """Delete all keys matching a glob pattern."""
+    """Delete all keys matching a glob pattern.
+
+    Uses SCAN (cursor-based, non-blocking) rather than KEYS, which is O(N) over
+    the entire keyspace and blocks the Redis server for the whole scan.
+    """
     try:
         client = await get_redis()
-        keys = await client.keys(pattern)
-        if keys:
-            await client.delete(*keys)
+        batch: list[str] = []
+        async for key in client.scan_iter(match=pattern, count=500):
+            batch.append(key)
+            if len(batch) >= 500:
+                await client.delete(*batch)
+                batch.clear()
+        if batch:
+            await client.delete(*batch)
     except Exception as e:
         logger.warning(f"Redis pattern DELETE failed for pattern={pattern}: {e}")
 
