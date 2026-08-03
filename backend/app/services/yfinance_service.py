@@ -138,7 +138,7 @@ async def yf_search_symbols(query: str) -> list[dict]:
 
 async def yf_get_company_profile(ticker: str) -> dict[str, Any]:
     """Fetch company profile via yfinance."""
-    try:
+    def _fetch() -> dict[str, Any]:
         import yfinance as yf
         t    = yf.Ticker(ticker.upper())
         info = t.info  # this call can be slow
@@ -155,6 +155,9 @@ async def yf_get_company_profile(ticker: str) -> dict[str, Any]:
             "country":      info.get("country", "US"),
             "currency":     info.get("currency", "USD"),
         }
+
+    try:
+        return await asyncio.to_thread(_fetch)
     except Exception as e:
         logger.warning(f"yfinance profile failed for {ticker}: {e}")
         from app.services.mock_data import get_mock_profile
