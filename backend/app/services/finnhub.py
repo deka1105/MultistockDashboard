@@ -200,8 +200,7 @@ async def get_company_news(ticker: str, days_back: int = 7) -> list[dict]:
         return cached
 
     now = datetime.now(timezone.utc)
-    from_date = now.replace(hour=0, minute=0, second=0)
-    from_str = (from_date.replace(day=max(1, from_date.day - days_back))).strftime("%Y-%m-%d")
+    from_str = (now - timedelta(days=days_back)).strftime("%Y-%m-%d")
     to_str = now.strftime("%Y-%m-%d")
 
     data = await _get("/company-news", params={
