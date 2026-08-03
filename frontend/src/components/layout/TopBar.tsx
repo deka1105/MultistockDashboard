@@ -206,7 +206,7 @@ export default function TopBar() {
             className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted focus:outline-none"
           />
           {query ? (
-            <button onClick={() => { setQuery(''); setOpen(false) }}>
+            <button onClick={() => { setQuery(''); setOpen(false) }} aria-label="Clear search">
               <X size={13} className="text-text-muted hover:text-text-primary" />
             </button>
           ) : (
