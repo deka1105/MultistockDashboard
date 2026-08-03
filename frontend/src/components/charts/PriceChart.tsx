@@ -254,15 +254,6 @@ export default function PriceChart({ candles, ticker, liveTick }: PriceChartProp
             <Line type="monotone" dataKey="bb_mid"   stroke="rgba(0,196,255,0.25)" strokeWidth={1} dot={false} activeDot={false} connectNulls />
             <Line type="monotone" dataKey="bb_lower" stroke="rgba(0,196,255,0.5)" strokeWidth={1} dot={false} activeDot={false} connectNulls strokeDasharray="2 2" />
           </>}
-          {/* Pattern annotations as reference dots */}
-          {showPatterns && patterns.map(p => {
-            const c = liveCandles[p.index]
-            if (!c) return null
-            const isBull = p.signal === 'bullish'
-            const isBear = p.signal === 'bearish'
-            return null // rendered via customized dot logic below
-          })}
-
           {showVWAP && timeRange === '1D' && (
             <Line type="monotone" dataKey="vwap" stroke="#a855f7" strokeWidth={1.5} dot={false} activeDot={false} connectNulls strokeDasharray="6 2" />
           )}
