@@ -182,6 +182,9 @@ async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
         t    = yf.Ticker(ticker.upper())
         info = t.info
 
+        # Normalise marketCap to millions to match Finnhub/mock (see yf_get_company_profile).
+        mc = info.get("marketCap")
+
         return {
             "ticker":            ticker.upper(),
             "52_week_high":      info.get("fiftyTwoWeekHigh"),
@@ -191,7 +194,7 @@ async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
             "eps":               info.get("trailingEps"),
             "revenue_per_share": info.get("revenuePerShare"),
             "dividend_yield":    round((info.get("dividendYield") or 0) * 100, 2),
-            "market_cap":        info.get("marketCap"),
+            "market_cap":        round(mc / 1_000_000, 2) if mc else None,
         }
 
     try:
