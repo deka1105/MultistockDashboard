@@ -215,7 +215,7 @@ export default function MarketPage() {
                         </span>
                       </td>
                       <td className="py-3 px-3 font-mono text-text-secondary text-xs tabular-nums">
-                        {row.market_cap ? `$${(row.market_cap / 1000).toFixed(0)}B` : '—'}
+                        {formatMarketCap(row.market_cap)}
                       </td>
                       <td className="py-3 px-3 hidden lg:table-cell" onClick={e => e.stopPropagation()}>
                         <Sparkline ticker={row.ticker} isUp={isUp} />
