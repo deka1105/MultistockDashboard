@@ -166,7 +166,7 @@ async def yf_get_company_profile(ticker: str) -> dict[str, Any]:
 
 async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
     """Fetch key financial metrics via yfinance."""
-    try:
+    def _fetch() -> dict[str, Any]:
         import yfinance as yf
         t    = yf.Ticker(ticker.upper())
         info = t.info
@@ -182,6 +182,9 @@ async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
             "dividend_yield":    round((info.get("dividendYield") or 0) * 100, 2),
             "market_cap":        info.get("marketCap"),
         }
+
+    try:
+        return await asyncio.to_thread(_fetch)
     except Exception as e:
         logger.warning(f"yfinance financials failed for {ticker}: {e}")
         from app.services.mock_data import get_mock_financials
