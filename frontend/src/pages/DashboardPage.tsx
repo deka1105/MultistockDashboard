@@ -28,8 +28,7 @@ export default function DashboardPage() {
   const { ticker }   = useParams<{ ticker: string }>()
   const navigate     = useNavigate()
   const { timeRange, addRecentTicker, showOptionsFlow } = useAppStore()
-  const T     = ticker?.toUpperCase() ?? 'AAPL'
-  const store = useAppStore()
+  const T = ticker?.toUpperCase() ?? 'AAPL'
 
   useEffect(() => { if (T) addRecentTicker(T) }, [T])
 
