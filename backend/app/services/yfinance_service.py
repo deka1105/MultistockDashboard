@@ -117,20 +117,26 @@ async def yf_search_symbols(query: str) -> list[dict]:
 
     # If query looks like an exact ticker and isn't in our DB, try yfinance directly
     if query.strip().upper() == query.strip() and len(query.strip()) <= 6 and not results:
-        try:
+        def _lookup() -> list[dict]:
             import yfinance as yf
-            t = yf.Ticker(query.strip().upper())
+            symbol = query.strip().upper()
+            t = yf.Ticker(symbol)
             info = t.fast_info
             if info.last_price:
-                results = [{
-                    "ticker":      query.strip().upper(),
-                    "symbol":      query.strip().upper(),
-                    "description": t.info.get("longName", query.upper()),
-                    "name":        t.info.get("longName", query.upper()),
+                meta = t.info
+                return [{
+                    "ticker":      symbol,
+                    "symbol":      symbol,
+                    "description": meta.get("longName", query.upper()),
+                    "name":        meta.get("longName", query.upper()),
                     "type":        "Common Stock",
-                    "exchange":    t.info.get("exchange", ""),
-                    "sector":      t.info.get("sector", ""),
+                    "exchange":    meta.get("exchange", ""),
+                    "sector":      meta.get("sector", ""),
                 }]
+            return []
+
+        try:
+            results = await asyncio.to_thread(_lookup)
         except Exception:
             pass
     return results
