@@ -281,7 +281,7 @@ async def get_options_chain(
     try:
         from datetime import date, timedelta
         exp_date = (date.today() + timedelta(days=30)).isoformat()
-        raw = await fh.client.get("/stock/option-chain", params={"symbol": ticker, "expiration": exp_date})
+        raw = await fh.get_http_client().get("/stock/option-chain", params={"symbol": ticker, "expiration": exp_date})
         raw.raise_for_status()
         payload = raw.json()
         await cache_set(cache_key, payload, ttl=300)
