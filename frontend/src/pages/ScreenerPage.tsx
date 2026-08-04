@@ -158,12 +158,16 @@ export default function ScreenerPage() {
     setSelected(s => { const n = new Set(s); n.has(ticker) ? n.delete(ticker) : n.add(ticker); return n })
 
   const Th = ({ label, col }: { label: string; col: string }) => (
-    <th onClick={() => handleSort(col)}
-      className="text-left py-2.5 px-3 text-[9px] uppercase tracking-widest text-text-muted font-medium cursor-pointer hover:text-text-secondary select-none whitespace-nowrap">
-      <span className="flex items-center gap-1">
+    <th
+      aria-sort={sortBy === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className="text-left py-2.5 px-3 text-[9px] uppercase tracking-widest text-text-muted font-medium select-none whitespace-nowrap">
+      <button
+        type="button"
+        onClick={() => handleSort(col)}
+        className="flex items-center gap-1 uppercase tracking-widest hover:text-text-secondary focus-visible:text-text-secondary transition-colors">
         {label}
         {sortBy === col && (sortDir === 'asc' ? <ChevronUp size={10} className="text-accent-cyan" /> : <ChevronDown size={10} className="text-accent-cyan" />)}
-      </span>
+      </button>
     </th>
   )
 
