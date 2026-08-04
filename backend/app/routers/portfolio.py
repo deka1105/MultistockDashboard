@@ -61,6 +61,20 @@ class PositionUpdate(BaseModel):
     avg_cost: float | None = None
     notes: str | None = None
 
+    @field_validator("shares")
+    @classmethod
+    def positive_shares(cls, v: float | None) -> float | None:
+        if v is not None and v <= 0:
+            raise ValueError("Shares must be positive")
+        return v
+
+    @field_validator("avg_cost")
+    @classmethod
+    def positive_cost(cls, v: float | None) -> float | None:
+        if v is not None and v <= 0:
+            raise ValueError("Cost must be positive")
+        return v
+
 
 # ─── Guest helpers ────────────────────────────────────────────────────────────
 
