@@ -149,6 +149,7 @@ async def _compute_summary(portfolio: Portfolio, positions: list[Position]) -> d
     total_cost  = 0.0
     today_pnl   = 0.0
     weighted_beta = 0.0
+    beta_value    = 0.0   # value of positions that actually have a beta
 
     # Also fetch beta (financials) in parallel for beta calculation
     financials = await asyncio.gather(
