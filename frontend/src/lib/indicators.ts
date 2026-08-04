@@ -111,13 +111,21 @@ export function calcMACD(
     return emaFast[i]! - emaSlow[i]!
   })
 
-  // Signal line = EMA of MACD line (only over non-null values)
-  const macdValues = macdLine.map(v => v ?? 0)
-  const signalLine = calcEMA(macdValues, signal)
+  // Signal line = EMA(signal) of the MACD line. Compute it over the valid
+  // (non-null) MACD values only and place the results back at their original
+  // indices. Zero-padding the leading nulls (the old approach) seeded the EMA
+  // at 0, biasing the signal toward zero and inflating the warmup histogram.
+  const signalLine: (number | null)[] = new Array(closes.length).fill(null)
+  const firstValid = macdLine.findIndex(v => v != null)
+  if (firstValid !== -1) {
+    const validMacd   = macdLine.slice(firstValid).map(v => v as number)
+    const validSignal = calcEMA(validMacd, signal)
+    validSignal.forEach((v, j) => { signalLine[firstValid + j] = v })
+  }
 
   return candles.map((_, i) => {
     const m = macdLine[i]
-    const s = macdLine[i] != null ? signalLine[i] : null
+    const s = signalLine[i]
     const h = m != null && s != null ? m - s : null
     return {
       macd:      m != null ? Math.round(m * 10000) / 10000 : null,
