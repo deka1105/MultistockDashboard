@@ -67,7 +67,7 @@ export function calcRSI(candles: CandlePoint[], period = 14): RSIPoint[] {
   avgLoss /= period
 
   const rs = avgLoss === 0 ? 100 : avgGain / avgLoss
-  result[period] = { rsi: 100 - 100 / (1 + rs) }
+  result[period] = { rsi: Math.round((100 - 100 / (1 + rs)) * 100) / 100 }
 
   // Wilder smoothing for remaining points
   for (let i = period + 1; i < candles.length; i++) {
