@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X, Plus, GitCompare, Star, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react'
 import { useScreener, useScreenerPresets, useScreenerFields, useQuickWatchlist } from '@/hooks/useStockData'
-import { formatPrice, formatPct, getPriceClass, cn } from '@/lib/utils'
+import { formatPrice, formatPct, formatMarketCap, getPriceClass, cn } from '@/lib/utils'
 import { Skeleton } from '@/components/common/Skeleton'
 
 interface Filter { field: string; operator: string; value: string | number }
