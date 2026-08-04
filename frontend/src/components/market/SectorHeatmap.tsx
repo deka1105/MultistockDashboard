@@ -244,7 +244,7 @@ export default function SectorHeatmap({ compact = false }: SectorHeatmapProps) {
                 {tooltip.tile.marketCap && (
                   <div className="flex justify-between gap-4">
                     <span className="text-text-muted">Mkt Cap</span>
-                    <span className="text-text-secondary">${(tooltip.tile.marketCap / 1000).toFixed(0)}B</span>
+                    <span className="text-text-secondary">{formatMarketCap(tooltip.tile.marketCap)}</span>
                   </div>
                 )}
               </div>
