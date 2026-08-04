@@ -279,7 +279,7 @@ export default function ScreenerPage() {
                       <td className="py-2.5 px-3 font-mono text-xs font-semibold text-text-primary">{formatPrice(row.price)}</td>
                       <td className={cn('py-2.5 px-3 font-mono text-xs font-semibold', getPriceClass(row.change_pct))}>{formatPct(row.change_pct)}</td>
                       <td className="py-2.5 px-3 font-mono text-xs text-text-secondary">
-                        {row.market_cap ? `$${(row.market_cap / 1000).toFixed(0)}B` : '—'}
+                        {formatMarketCap(row.market_cap)}
                       </td>
                       <td className="py-2.5 px-3 font-mono text-xs text-text-secondary">{row.pe_ratio?.toFixed(1) ?? '—'}</td>
                       <td className="py-2.5 px-3 font-mono text-xs text-text-secondary">{row.beta?.toFixed(2) ?? '—'}</td>
