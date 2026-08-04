@@ -201,13 +201,15 @@ async def _compute_summary(portfolio: Portfolio, positions: list[Position]) -> d
         })
         if beta:
             weighted_beta += beta * value
+            beta_value    += value
 
     # Fill weights
     for e in enriched:
         e["weight_pct"] = round((e["value"] / total_value * 100) if total_value else 0, 2)
 
-    # Portfolio beta (value-weighted)
-    portfolio_beta = round(weighted_beta / total_value, 3) if total_value else None
+    # Portfolio beta — value-weighted over positions that have a beta only,
+    # so positions with unknown beta don't dilute the average toward zero.
+    portfolio_beta = round(weighted_beta / beta_value, 3) if beta_value else None
 
     total_pnl     = total_value - total_cost
     total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0.0
