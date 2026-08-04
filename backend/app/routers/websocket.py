@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services import finnhub as fh
-from app.services.finnhub import USE_YFINANCE
 from app.core.cache import get_redis
 
 logger = logging.getLogger(__name__)
