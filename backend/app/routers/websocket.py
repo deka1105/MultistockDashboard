@@ -55,11 +55,8 @@ async def _poll_ticker(ticker: str):
     try:
         while _connections.get(ticker):
             try:
-                if USE_YFINANCE:
-                    from app.services.yfinance_service import yf_get_quote
-                    quote = await yf_get_quote(ticker)
-                else:
-                    quote = await fh.get_quote(ticker)
+                # get_quote routes to yfinance internally when no Finnhub key is set.
+                quote = await fh.get_quote(ticker)
                 price = quote.get("price")
 
                 tick = {
