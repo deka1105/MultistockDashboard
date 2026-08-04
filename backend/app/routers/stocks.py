@@ -325,7 +325,7 @@ async def get_insider_transactions(ticker: str):
 
     if not USE_MOCK:
         try:
-            raw = await fh.client.get("/stock/insider-transactions", params={"symbol": ticker})
+            raw = await fh.get_http_client().get("/stock/insider-transactions", params={"symbol": ticker})
             raw.raise_for_status()
             payload = raw.json()
             await cache_set(cache_key, payload, ttl=3600 * 4)
