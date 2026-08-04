@@ -95,11 +95,15 @@ export default function HoldingsTable({ portfolioId, positions, focusedTicker, o
   }
 
   const Th = ({ label, col }: { label: string; col: SortKey }) => (
-    <th onClick={() => handleSort(col)}
-      className="text-left py-2.5 px-3 text-[9px] uppercase tracking-widest text-text-muted font-medium cursor-pointer hover:text-text-secondary select-none whitespace-nowrap">
-      <span className="flex items-center gap-1">
+    <th
+      aria-sort={sortKey === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className="text-left py-2.5 px-3 text-[9px] uppercase tracking-widest text-text-muted font-medium select-none whitespace-nowrap">
+      <button
+        type="button"
+        onClick={() => handleSort(col)}
+        className="flex items-center gap-1 uppercase tracking-widest hover:text-text-secondary focus-visible:text-text-secondary transition-colors">
         {label} <SortIcon col={col} current={sortKey} dir={sortDir} />
-      </span>
+      </button>
     </th>
   )
 
