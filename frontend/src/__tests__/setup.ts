@@ -26,12 +26,20 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────
-global.WebSocket = vi.fn().mockImplementation(() => ({
-  send: vi.fn(), close: vi.fn(),
-  addEventListener: vi.fn(), removeEventListener: vi.fn(),
-  onopen: null, onclose: null, onmessage: null, onerror: null,
-  readyState: 1, OPEN: 1,
-})) as any
+// Reinstalled before every test: MSW 2.x's server.listen() (a beforeAll hook)
+// replaces globalThis.WebSocket with its own interceptor, which would otherwise
+// clobber this mock and auto-open sockets — breaking the useWebSocket unit tests
+// that rely on vi.mocked(global.WebSocket).mockReturnValueOnce(...).
+function installWebSocketMock() {
+  global.WebSocket = vi.fn().mockImplementation(() => ({
+    send: vi.fn(), close: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    onopen: null, onclose: null, onmessage: null, onerror: null,
+    readyState: 1, OPEN: 1,
+  })) as any
+}
+installWebSocketMock()
+beforeEach(() => { installWebSocketMock() })
 
 // ─── localStorage ─────────────────────────────────────────────────────────────
 const localStorageMock = (() => {
