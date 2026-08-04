@@ -249,12 +249,15 @@ async def run_screener(
     if filter_list:
         rows = [r for r in rows if _apply_filters(r, filter_list)]
 
-    # Sort
+    # Sort — always place rows with a missing sort value last, regardless of
+    # direction. A single reverse=True over a (is_none, value) tuple would flip
+    # the is_none flag too, bubbling missing values to the TOP in descending
+    # order (e.g. a null market cap ranking above the largest-cap stock).
     reverse = sort_dir.lower() == "desc"
-    rows.sort(
-        key=lambda r: (r.get(sort_by) is None, r.get(sort_by) or 0),
-        reverse=reverse,
-    )
+    present = [r for r in rows if r.get(sort_by) is not None]
+    missing = [r for r in rows if r.get(sort_by) is None]
+    present.sort(key=lambda r: r[sort_by], reverse=reverse)
+    rows = present + missing
 
     # Paginate
     total  = len(rows)
