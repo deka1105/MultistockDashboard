@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMarketOverview } from '@/hooks/useStockData'
-import { formatPrice, formatPct, cn } from '@/lib/utils'
+import { formatPrice, formatPct, formatMarketCap, cn } from '@/lib/utils'
 
 type ViewMode = 'today' | '1w' | '1m' | 'ytd'
 
