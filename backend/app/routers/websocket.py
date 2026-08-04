@@ -117,11 +117,7 @@ async def websocket_ticks(websocket: WebSocket, ticker: str):
 
     # Send immediate snapshot on connect
     try:
-        if USE_YFINANCE:
-            from app.services.yfinance_service import yf_get_quote
-            quote = await yf_get_quote(ticker)
-        else:
-            quote = await fh.get_quote(ticker)
+        quote = await fh.get_quote(ticker)
         await websocket.send_json({
             "type": "snapshot",
             "ticker": ticker,

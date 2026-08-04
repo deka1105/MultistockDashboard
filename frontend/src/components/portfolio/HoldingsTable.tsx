@@ -147,7 +147,7 @@ export default function HoldingsTable({ portfolioId, positions, focusedTicker, o
                   <tr key={pos.id}
                     onClick={() => !isEditing && navigate(`/dashboard/${pos.ticker}`)}
                     className={cn(
-                      'border-b border-bg-border/40 last:border-0 transition-colors',
+                      'group border-b border-bg-border/40 last:border-0 transition-colors',
                       isEditing ? 'bg-bg-hover' : 'hover:bg-bg-hover cursor-pointer'
                     )}>
                     {/* Ticker */}
