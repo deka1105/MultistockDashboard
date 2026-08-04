@@ -211,12 +211,20 @@ export function calcStochastic(
     return Math.round(((candles[i].close - lowest) / range) * 10000) / 100
   })
 
-  const kNums = kValues.map(v => v ?? 0)
-  const dValues = calcSMA(kNums, d_period)
+  // %D = SMA(%K, d_period), computed only over valid %K values.
+  // Padding leading nulls with 0 (the old approach) dragged the first couple of
+  // %D points toward zero; instead %D stays null until d_period valid %K exist.
+  const dValues: (number | null)[] = kValues.map((_, i) => {
+    if (i < d_period - 1) return null
+    const window = kValues.slice(i - d_period + 1, i + 1)
+    if (window.some(v => v == null)) return null
+    const sum = (window as number[]).reduce((a, b) => a + b, 0)
+    return Math.round((sum / d_period) * 100) / 100
+  })
 
   return candles.map((_, i) => ({
     stoch_k: kValues[i],
-    stoch_d: kValues[i] != null ? dValues[i] : null,
+    stoch_d: dValues[i],
   }))
 }
 
