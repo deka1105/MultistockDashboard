@@ -451,10 +451,10 @@ export function usePortfolioAlerts(portfolioId: number | null) {
   })
 }
 
-export function usePortfolioScreenerPreview(portfolioId: number | null) {
+export function usePortfolioScreenerPreview(portfolioId: number | null, preset = 'high_momentum') {
   return useQuery({
-    queryKey: ['portfolio-screener-preview', portfolioId],
-    queryFn:  () => api.get(`/portfolio/${portfolioId}/screener-preview`).then(r => r.data),
+    queryKey: ['portfolio-screener-preview', portfolioId, preset],
+    queryFn:  () => api.get(`/portfolio/${portfolioId}/screener-preview`, { params: { preset } }).then(r => r.data),
     enabled:  !!portfolioId,
     staleTime: 5 * 60_000,
   })
