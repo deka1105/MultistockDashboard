@@ -154,10 +154,6 @@ class MarketOverviewItem(BaseModel):
     price: float | None
     change: float | None
     change_pct: float | None
-    # Period returns derived from the 1Y candle series (None when unavailable)
-    change_pct_1w: float | None = None
-    change_pct_1m: float | None = None
-    change_pct_ytd: float | None = None
     volume: float | None
     market_cap: float | None
 
