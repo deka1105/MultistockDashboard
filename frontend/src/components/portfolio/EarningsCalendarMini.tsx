@@ -27,7 +27,10 @@ export default function EarningsCalendarMini({ portfolioId }: Props) {
       for (let d = 0; d < 5; d++) {
         const day = new Date(monday)
         day.setDate(monday.getDate() + w * 7 + d)
-        week.push(day.toISOString().slice(0, 10))
+        // Format in local time — toISOString() shifts to UTC and pushes the
+        // date forward a day for US users in the afternoon/evening, misaligning
+        // earnings chips against their displayed date number and report_date.
+        week.push(format(day, 'yyyy-MM-dd'))
       }
       grid.push(week)
     }
@@ -44,7 +47,7 @@ export default function EarningsCalendarMini({ portfolioId }: Props) {
     return m
   }, [data])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   return (
     <div className="card p-4 flex flex-col gap-3">
