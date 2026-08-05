@@ -34,15 +34,15 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'PORTFOLIO',
     items: [
-      { to: '/portfolio', label: 'Portfolio P&L', icon: Briefcase, isNew: true },
+      { to: '/portfolio', label: 'Portfolio P&L', icon: Briefcase },
     ],
   },
   {
     label: 'ANALYSIS',
     items: [
-      { to: '/screener',  label: 'Screener',          icon: SlidersHorizontal, isNew: true },
-      { to: '/alerts',    label: 'Alerts',            icon: Bell,              isNew: true },
-      { to: '/calendar',  label: 'Earnings Calendar', icon: CalendarDays,      isNew: true },
+      { to: '/screener',  label: 'Screener',          icon: SlidersHorizontal },
+      { to: '/alerts',    label: 'Alerts',            icon: Bell              },
+      { to: '/calendar',  label: 'Earnings Calendar', icon: CalendarDays      },
     ],
   },
 ]
