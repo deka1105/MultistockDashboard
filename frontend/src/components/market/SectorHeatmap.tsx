@@ -170,7 +170,12 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
         <p className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
           S&P 500 — Sector Performance
         </p>
-        <span className="text-[10px] font-mono text-text-muted">Today %</span>
+        <div className="flex items-center gap-1">
+          {([['today', 'Today %'], ['1w', '1W %'], ['1m', '1M %'], ['ytd', 'YTD %']] as [ViewMode, string][]).map(([v, l]) => (
+            <button key={v} onClick={() => setView(v)}
+              className={v === view ? 'range-btn-active' : 'range-btn'}>{l}</button>
+          ))}
+        </div>
       </div>
       )}
 
