@@ -59,3 +59,15 @@ class TestEnrichedScreenerPreview:
         r = await client.get(f"/api/v1/portfolio/{pid}/screener-preview?preset=nonsense")
         assert r.status_code == 200
         assert r.json()["preset"] == "high_momentum"
+
+
+class TestScreenerRefactorIntact:
+    @pytest.mark.asyncio
+    async def test_main_screener_still_returns_enriched_rows(self, client):
+        r = await client.get("/api/v1/screener/?sort_by=change_pct&sort_dir=desc")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] >= 1
+        for row in data["results"][:3]:
+            for k in ("ticker", "company_name", "pe_ratio", "rsi", "signal", "change_pct"):
+                assert k in row
