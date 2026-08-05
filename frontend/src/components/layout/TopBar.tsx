@@ -8,42 +8,51 @@ import { useDebounce } from '@/hooks/useDebounce'
 
 // ─── Search Dropdown ─────────────────────────────────────────────────────────
 
-function SearchDropdown({ query, onSelect }: { query: string; onSelect: (t: string) => void }) {
-  const { data, isLoading } = useSearch(query)
-  const { recentTickers } = useAppStore()
+interface SearchItem { ticker: string; description?: string; exchange?: string; recent?: boolean }
 
-  if (query.length === 0) {
-    return (
-      <div className="absolute top-full mt-2 left-0 right-0 card shadow-2xl shadow-black/50 z-50 py-2 animate-fade-in">
-        <p className="stat-label px-3 py-1">Recent</p>
-        {recentTickers.map((ticker) => (
-          <button key={ticker} onClick={() => onSelect(ticker)}
-            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-hover transition-colors text-left">
-            <Clock size={13} className="text-text-muted shrink-0" />
-            <span className="font-mono text-sm text-text-primary">{ticker}</span>
-          </button>
-        ))}
-        {recentTickers.length === 0 && (
-          <p className="px-3 py-2 text-xs text-text-muted">Search for a ticker to get started</p>
-        )}
-      </div>
-    )
-  }
-
+// Presentational: the parent owns the item list + active index so ⌘K search is
+// fully keyboard-operable (↑/↓ to move, Enter to select).
+function SearchDropdown({
+  items, isLoading, query, activeIndex, onSelect, onHover,
+}: {
+  items: SearchItem[]
+  isLoading: boolean
+  query: string
+  activeIndex: number
+  onSelect: (t: string) => void
+  onHover: (i: number) => void
+}) {
+  const isEmptyQuery = query.length === 0
   return (
-    <div className="absolute top-full mt-2 left-0 right-0 card shadow-2xl shadow-black/50 z-50 py-2 animate-fade-in">
-      {isLoading && <div className="px-3 py-3 text-sm text-text-muted">Searching…</div>}
-      {!isLoading && data?.results?.length === 0 && (
+    <div id="search-listbox" role="listbox" aria-label="Search results"
+      className="absolute top-full mt-2 left-0 right-0 card shadow-2xl shadow-black/50 z-50 py-2 animate-fade-in">
+      {isEmptyQuery && <p className="stat-label px-3 py-1">Recent</p>}
+      {isEmptyQuery && items.length === 0 && (
+        <p className="px-3 py-2 text-xs text-text-muted">Search for a ticker to get started</p>
+      )}
+      {!isEmptyQuery && isLoading && <div className="px-3 py-3 text-sm text-text-muted">Searching…</div>}
+      {!isEmptyQuery && !isLoading && items.length === 0 && (
         <div className="px-3 py-3 text-sm text-text-muted">No results for "{query}"</div>
       )}
-      {data?.results?.map((result) => result.ticker && (
-        <button key={result.ticker} onClick={() => onSelect(result.ticker!)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left">
-          <TrendingUp size={13} className="text-accent-cyan shrink-0" />
-          <span className="font-mono text-sm font-semibold text-text-primary w-16 shrink-0">{result.ticker}</span>
-          <span className="text-xs text-text-secondary truncate">{result.description}</span>
-          {result.exchange && (
-            <span className="ml-auto text-[10px] text-text-muted font-mono shrink-0">{result.exchange}</span>
+      {items.map((item, i) => (
+        <button
+          key={item.ticker}
+          id={`search-opt-${i}`}
+          role="option"
+          aria-selected={i === activeIndex}
+          onClick={() => onSelect(item.ticker)}
+          onMouseEnter={() => onHover(i)}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left',
+            i === activeIndex ? 'bg-bg-hover' : 'hover:bg-bg-hover'
+          )}>
+          {item.recent
+            ? <Clock size={13} className="text-text-muted shrink-0" />
+            : <TrendingUp size={13} className="text-accent-cyan shrink-0" />}
+          <span className="font-mono text-sm font-semibold text-text-primary w-16 shrink-0">{item.ticker}</span>
+          {item.description && <span className="text-xs text-text-secondary truncate">{item.description}</span>}
+          {item.exchange && (
+            <span className="ml-auto text-[10px] text-text-muted font-mono shrink-0">{item.exchange}</span>
           )}
         </button>
       ))}
