@@ -180,12 +180,8 @@ async def yf_get_company_profile(ticker: str) -> dict[str, Any]:
             "currency":     info.get("currency", "USD"),
         }
 
-    try:
-        return await asyncio.to_thread(_fetch)
-    except Exception as e:
-        logger.warning(f"yfinance profile failed for {ticker}: {e}")
-        from app.services.mock_data import get_mock_profile
-        return get_mock_profile(ticker)
+    from app.services.mock_data import get_mock_profile
+    return await _yf_or_mock(_fetch, lambda: get_mock_profile(ticker), f"profile {ticker}")
 
 
 async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
@@ -210,12 +206,8 @@ async def yf_get_basic_financials(ticker: str) -> dict[str, Any]:
             "market_cap":        round(mc / 1_000_000, 2) if mc else None,
         }
 
-    try:
-        return await asyncio.to_thread(_fetch)
-    except Exception as e:
-        logger.warning(f"yfinance financials failed for {ticker}: {e}")
-        from app.services.mock_data import get_mock_financials
-        return get_mock_financials(ticker)
+    from app.services.mock_data import get_mock_financials
+    return await _yf_or_mock(_fetch, lambda: get_mock_financials(ticker), f"financials {ticker}")
 
 
 async def yf_get_news(ticker: str) -> list[dict]:
