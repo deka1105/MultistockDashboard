@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Bell, Plus, ExternalLink, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { Bell, Plus, ExternalLink, CheckCircle } from 'lucide-react'
 import { usePortfolioAlerts } from '@/hooks/useStockData'
 import { formatPrice, cn } from '@/lib/utils'
 
