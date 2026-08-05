@@ -5,7 +5,7 @@ import { formatPrice, cn } from '@/lib/utils'
 
 interface Props { portfolioId: number }
 
-function AlertBadge({ type, threshold, ticker }: { type: string; threshold: number | null; ticker: string }) {
+function AlertBadge({ type, threshold }: { type: string; threshold: number | null }) {
   const labels: Record<string, string> = {
     price_above:  `↑ Above ${threshold ? formatPrice(threshold) : '—'}`,
     price_below:  `↓ Below ${threshold ? formatPrice(threshold) : '—'}`,
@@ -91,7 +91,7 @@ export default function AlertsSummaryCard({ portfolioId }: Props) {
                     </button>
                     {/* Alert type + threshold */}
                     <div className="flex-1 min-w-0">
-                      <AlertBadge type={alert.alert_type} threshold={alert.threshold} ticker={alert.ticker} />
+                      <AlertBadge type={alert.alert_type} threshold={alert.threshold} />
                     </div>
                     {/* Proximity + badge */}
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -145,7 +145,7 @@ export default function AlertsSummaryCard({ portfolioId }: Props) {
                           {alert.ticker}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <AlertBadge type={alert.alert_type} threshold={alert.threshold} ticker={alert.ticker} />
+                          <AlertBadge type={alert.alert_type} threshold={alert.threshold} />
                         </div>
                         {alert.triggered_price && (
                           <span className="text-[9px] font-mono text-accent-green shrink-0">
