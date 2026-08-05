@@ -254,14 +254,14 @@ export default function PortfolioPage() {
             <div className="card p-4 flex flex-col gap-2 min-h-[220px]">
               <div className="flex items-start justify-between shrink-0">
                 <p className="font-display font-semibold text-sm text-text-primary">Sector Heatmap
-                  <span className="ml-2 text-[9px] font-mono text-text-muted font-normal">S&P 500 · today</span>
+                  <span className="ml-2 text-[9px] font-mono text-text-muted font-normal">your holdings · today</span>
                 </p>
                 <Link to="/market?view=heatmap" className="flex items-center gap-0.5 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors">
                   Full view <ArrowUpRight size={11} />
                 </Link>
               </div>
               <div className="flex-1 overflow-hidden">
-                <SectorHeatmap compact />
+                <SectorHeatmap compact tickers={heldTickers} />
               </div>
             </div>
 
