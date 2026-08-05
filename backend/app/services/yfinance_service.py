@@ -12,11 +12,20 @@ Falls back to mock_data if yfinance itself fails (e.g. unknown ticker).
 """
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Dedicated, SMALL thread pool for yfinance calls. yfinance is blocking and its
+# heavy calls (t.info) use a lot of transient memory while scraping. On a 512MB
+# free instance, a bulk endpoint fetching ~200 tickers at once (market overview /
+# screener) spawns hundreds of concurrent scrapes → OOM → the whole process is
+# killed → every endpoint 502s. Capping running threads here HARD-bounds peak
+# memory (a plain asyncio.Semaphore wouldn't — timed-out calls keep their thread).
+_YF_POOL = ThreadPoolExecutor(max_workers=6, thread_name_prefix="yf")
 
 # Candle range → yfinance period/interval mapping
 _RANGE_MAP = {
