@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { format, subDays, startOfDay, parseISO } from 'date-fns'
+import { format, subDays, addDays, startOfDay, startOfWeek, parseISO } from 'date-fns'
 import { cn, formatPrice } from '@/lib/utils'
 import type { PnLSnapshot } from '@/types/stock'
 
