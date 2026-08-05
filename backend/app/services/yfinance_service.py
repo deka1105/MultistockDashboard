@@ -46,11 +46,13 @@ YF_TIMEOUT = 8.0
 
 
 async def _yf_or_mock(fetch, fallback, what: str):
-    """Run a blocking yfinance fetch in a worker thread, bounded by YF_TIMEOUT.
-    On timeout OR any error, fall back to mock data so a slow/throttled Yahoo can
-    never hang the request or saturate the worker pool."""
+    """Run a blocking yfinance fetch in the bounded _YF_POOL, capped by YF_TIMEOUT.
+    On timeout OR any error, fall back to mock data — so a slow/throttled Yahoo can
+    never hang the request, and a bulk fetch can never exceed the pool's memory
+    footprint (excess calls queue instead of running concurrently)."""
+    loop = asyncio.get_running_loop()
     try:
-        return await asyncio.wait_for(asyncio.to_thread(fetch), timeout=YF_TIMEOUT)
+        return await asyncio.wait_for(loop.run_in_executor(_YF_POOL, fetch), timeout=YF_TIMEOUT)
     except Exception as e:
         logger.warning(f"yfinance {what} unavailable ({type(e).__name__}: {e}); using mock")
         return fallback()
