@@ -86,10 +86,13 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
 
         candles = []
         for ts, row in hist.iterrows():
-            # ts is a pandas Timestamp
+            # ts is a pandas Timestamp. Match the CandlePoint schema exactly
+            # (date + timestamp) — the old "time"-only shape, plus a missing
+            # top-level "resolution", failed CandlesResponse validation → 500.
             epoch = int(ts.timestamp())
             candles.append({
-                "time":   epoch,
+                "date":      ts.isoformat(),
+                "timestamp": epoch,
                 "open":   round(float(row["Open"]),   4),
                 "high":   round(float(row["High"]),   4),
                 "low":    round(float(row["Low"]),    4),
@@ -97,7 +100,7 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
                 "volume": int(row.get("Volume", 0)),
             })
 
-        return {"ticker": ticker.upper(), "range": range_key, "candles": candles}
+        return {"ticker": ticker.upper(), "range": range_key, "resolution": interval, "candles": candles}
 
     try:
         return await asyncio.to_thread(_fetch)
