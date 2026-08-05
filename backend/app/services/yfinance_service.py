@@ -80,12 +80,8 @@ async def yf_get_quote(ticker: str) -> dict[str, Any]:
             "timestamp":  int(datetime.now(timezone.utc).timestamp()),
         }
 
-    try:
-        return await asyncio.to_thread(_fetch)
-    except Exception as e:
-        logger.warning(f"yfinance quote failed for {ticker}: {e}")
-        from app.services.mock_data import get_mock_quote
-        return get_mock_quote(ticker)
+    from app.services.mock_data import get_mock_quote
+    return await _yf_or_mock(_fetch, lambda: get_mock_quote(ticker), f"quote {ticker}")
 
 
 async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
