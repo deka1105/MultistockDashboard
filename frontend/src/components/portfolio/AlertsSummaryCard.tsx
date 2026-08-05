@@ -2,8 +2,13 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Plus, ExternalLink, CheckCircle } from 'lucide-react'
 import { usePortfolioAlerts } from '@/hooks/useStockData'
 import { formatPrice, cn } from '@/lib/utils'
+import InlineAlertCreator from '@/components/alerts/InlineAlertCreator'
 
-interface Props { portfolioId: number }
+interface Props {
+  portfolioId: number
+  /** Focused holding — the inline "New alert" creator targets this ticker (10C). */
+  defaultTicker?: string
+}
 
 function AlertBadge({ type, threshold }: { type: string; threshold: number | null }) {
   const labels: Record<string, string> = {
