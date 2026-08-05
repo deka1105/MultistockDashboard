@@ -81,10 +81,9 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const { data, isLoading }   = useMarketOverview()
 
-  const tickerSet = tickers && tickers.length ? new Set(tickers) : null
-
   // Group tiles by sector, sorted by total market cap descending
   const groups: SectorGroup[] = useMemo(() => {
+    const tickerSet = tickers && tickers.length ? new Set(tickers) : null
     const items: Tile[] = (data?.items ?? [])
       .filter((item: any) => !tickerSet || tickerSet.has(item.ticker))
       .map((item: any) => ({
