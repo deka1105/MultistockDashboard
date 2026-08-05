@@ -203,8 +203,9 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
                 {group.tiles.map((tile, ti) => {
                   const r = tileRects[ti]
                   if (!r || r.w < 2 || r.h < 2) return null
-                  const bg     = changePctToColor(tile.changePct)
-                  const border = changePctToBorder(tile.changePct)
+                  const cp     = tilePct(tile, view)
+                  const bg     = changePctToColor(cp)
+                  const border = changePctToBorder(cp)
                   const showLabel = r.w > 28 && r.h > 18
                   const showPct   = r.w > 40 && r.h > 30
 
@@ -228,14 +229,14 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
                           {tile.ticker}
                         </text>
                       )}
-                      {showPct && tile.changePct != null && (
+                      {showPct && cp != null && (
                         <text
                           x={r.x + r.w / 2} y={r.y + r.h / 2 + 10}
                           textAnchor="middle"
                           fontSize={Math.min(9, Math.max(6, r.w / 7))}
                           fontFamily="IBM Plex Mono, monospace"
-                          fill={tile.changePct >= 0 ? 'rgba(0,232,122,0.9)' : 'rgba(255,60,90,0.9)'}>
-                          {tile.changePct >= 0 ? '+' : ''}{tile.changePct.toFixed(1)}%
+                          fill={cp >= 0 ? 'rgba(0,232,122,0.9)' : 'rgba(255,60,90,0.9)'}>
+                          {cp >= 0 ? '+' : ''}{cp.toFixed(1)}%
                         </text>
                       )}
                     </g>
