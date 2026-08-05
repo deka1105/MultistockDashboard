@@ -1,40 +1,13 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SlidersHorizontal, ExternalLink, TrendingUp, Briefcase } from 'lucide-react'
-import { usePortfolioScreenerPreview, useScreenerPresets } from '@/hooks/useStockData'
+import { usePortfolioScreenerPreview } from '@/hooks/useStockData'
 import { formatPrice, formatPct, cn } from '@/lib/utils'
 
 interface Props { portfolioId: number }
 
-const SIGNAL_COLORS: Record<string, string> = {
-  strong_buy: 'bg-accent-green/15 text-accent-green border-accent-green/25',
-  buy:        'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20',
-  hold:       'bg-accent-amber/10 text-accent-amber border-accent-amber/20',
-  sell:       'bg-accent-red/10 text-accent-red border-accent-red/20',
-}
-
-const SIGNAL_LABELS: Record<string, string> = {
-  strong_buy: 'Strong Buy',
-  buy:        'Buy',
-  hold:       'Hold',
-  sell:       'Sell',
-}
-
-function RsiBadge({ rsi }: { rsi: number | null }) {
-  if (rsi == null) return <span className="text-text-muted font-mono text-xs">—</span>
-  const color = rsi >= 70 ? 'bg-accent-red/15 text-accent-red'
-    : rsi <= 30 ? 'bg-accent-green/15 text-accent-green'
-    : 'bg-bg-hover text-text-secondary'
-  return (
-    <span className={cn('text-[10px] font-mono font-bold px-1.5 py-0.5 rounded', color)}>
-      {Math.round(rsi)}
-    </span>
-  )
-}
-
 export default function ScreenerPreviewCard({ portfolioId }: Props) {
   const navigate = useNavigate()
-  const { data, isLoading, refetch } = usePortfolioScreenerPreview(portfolioId)
+  const { data, isLoading } = usePortfolioScreenerPreview(portfolioId)
 
   return (
     <div className="card p-4 flex flex-col gap-3">
