@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
 import { Calendar, ExternalLink } from 'lucide-react'
 import { usePortfolioEarnings } from '@/hooks/useStockData'
 import { cn } from '@/lib/utils'

@@ -47,10 +47,14 @@ export default function DailyPnLCalendar({ snapshots }: Props) {
     return map
   }, [snapshots])
 
-  // Build last 35 days grid
-  const today = startOfDay(new Date())
+  // Build a 5-week grid aligned to weekday columns. The grid starts on the
+  // Monday four weeks before the current week's Monday, so day 0 always lands
+  // under the "M" header and weekends fall under the trailing "S S" columns —
+  // otherwise the static M–S headers only align on Sundays.
+  const today   = startOfDay(new Date())
+  const gridStart = subDays(startOfWeek(today, { weekStartsOn: 1 }), 28)
   const days = Array.from({ length: 35 }, (_, i) => {
-    const d = subDays(today, 34 - i)
+    const d = addDays(gridStart, i)
     const key = format(d, 'yyyy-MM-dd')
     const snap = snapshotMap[key]
     return {
