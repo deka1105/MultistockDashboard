@@ -63,12 +63,10 @@ export default function ScreenerPreviewCard({ portfolioId }: Props) {
       ) : (
         <>
           {/* Column headers */}
-          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-3 gap-y-0 px-2 text-[9px] font-mono text-text-muted uppercase tracking-wider">
+          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-0 px-2.5 text-[9px] font-mono text-text-muted uppercase tracking-wider">
             <span>Ticker</span>
-            <span>Company</span>
             <span className="text-right">Price</span>
             <span className="text-right">Today</span>
-            <span className="text-right">Signal</span>
           </div>
 
           <div className="space-y-1">
@@ -77,23 +75,18 @@ export default function ScreenerPreviewCard({ portfolioId }: Props) {
                 key={row.ticker}
                 onClick={() => navigate(`/dashboard/${row.ticker}`)}
                 className={cn(
-                  'w-full grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-3 items-center px-2.5 py-2 rounded-lg border transition-all text-left',
+                  'w-full grid grid-cols-[1fr_auto_auto] gap-x-4 items-center px-2.5 py-2 rounded-lg border transition-all text-left',
                   row.in_portfolio
                     ? 'bg-accent-cyan/5 border-accent-cyan/20 hover:bg-accent-cyan/10'
                     : 'bg-bg-hover border-bg-border hover:border-accent-cyan/20'
                 )}>
                 {/* Ticker */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   {row.in_portfolio && (
                     <Briefcase size={9} className="text-accent-cyan shrink-0" />
                   )}
-                  <span className="font-mono font-bold text-xs text-text-primary">{row.ticker}</span>
+                  <span className="font-mono font-bold text-xs text-text-primary truncate">{row.ticker}</span>
                 </div>
-
-                {/* Company */}
-                <span className="font-mono text-[10px] text-text-muted truncate">
-                  {row.company_name ?? row.ticker}
-                </span>
 
                 {/* Price */}
                 <span className="font-mono text-xs text-text-primary text-right">
@@ -107,18 +100,6 @@ export default function ScreenerPreviewCard({ portfolioId }: Props) {
                 )}>
                   {row.change_pct != null ? formatPct(row.change_pct) : '—'}
                 </span>
-
-                {/* Signal */}
-                {row.signal ? (
-                  <span className={cn(
-                    'text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border text-right',
-                    SIGNAL_COLORS[row.signal] ?? 'bg-bg-hover text-text-muted border-bg-border'
-                  )}>
-                    {SIGNAL_LABELS[row.signal] ?? row.signal}
-                  </span>
-                ) : (
-                  <span className="text-text-muted text-[10px] font-mono text-right">—</span>
-                )}
               </button>
             ))}
           </div>
