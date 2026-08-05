@@ -112,7 +112,7 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
         return { sector, tiles: tiles.sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)), totalCap, avgChange }
       })
       .sort((a, b) => b.totalCap - a.totalCap)
-  }, [data])
+  }, [data, tickers])
 
   const totalCap = groups.reduce((s, g) => s + g.totalCap, 0)
 
@@ -125,7 +125,16 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
   }, [])
 
   if (isLoading) return (
-    <div className="w-full h-96 rounded-xl bg-bg-hover animate-pulse" />
+    <div className={cn('w-full rounded-xl bg-bg-hover animate-pulse', compact ? 'h-full min-h-[120px]' : 'h-96')} />
+  )
+
+  // Portfolio-filtered mode with no overlap against the market-overview universe
+  if (tickers && groups.length === 0) return (
+    <div className="flex items-center justify-center h-full min-h-[120px]">
+      <p className="text-[10px] text-text-muted font-mono text-center px-2">
+        No sector data for your holdings
+      </p>
+    </div>
   )
 
   // Outer layout: sectors as large blocks
