@@ -87,18 +87,52 @@ export default function TopBar() {
   const location = useLocation()
   const [query,   setQuery]   = useState('')
   const [open,    setOpen]    = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
   const debouncedQuery        = useDebounce(query, 250)
   const containerRef          = useRef<HTMLDivElement>(null)
   const searchInputRef        = useRef<HTMLInputElement>(null)
-  const { addRecentTicker, theme, toggleTheme, toggleSidebar } = useAppStore()
+  const { addRecentTicker, recentTickers, theme, toggleTheme, toggleSidebar } = useAppStore()
   const wsStatus = useWebSocketStatus()
   const handleExport = useExportAction()
+
+  // Search results lifted here so the dropdown is keyboard-navigable.
+  // useSearch is disabled for empty queries, so recents cost nothing.
+  const { data: searchData, isLoading: searchLoading } = useSearch(debouncedQuery)
+  const items: SearchItem[] = debouncedQuery.length === 0
+    ? recentTickers.map((t) => ({ ticker: t, recent: true }))
+    : (searchData?.results ?? [])
+        .filter((r) => r.ticker)
+        .map((r) => ({ ticker: r.ticker!, description: r.description, exchange: r.exchange }))
+  const safeIndex = Math.min(activeIndex, Math.max(items.length - 1, 0))
+
+  // Reset the highlight to the top when the query changes or the dropdown (re)opens
+  useEffect(() => { setActiveIndex(0) }, [debouncedQuery, open])
 
   const handleSelect = (ticker: string) => {
     addRecentTicker(ticker)
     navigate(`/dashboard/${ticker}`)
     setQuery('')
     setOpen(false)
+  }
+
+  // ↑/↓ move the highlight, Enter selects it, Escape dismisses. Lives on the input
+  // (fresh closure each render) so it always sees current items/activeIndex.
+  const handleSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setQuery(''); setOpen(false); e.currentTarget.blur()
+      return
+    }
+    if (!open || items.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.min(i + 1, items.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      const item = items[safeIndex]
+      if (item) { e.preventDefault(); handleSelect(item.ticker) }
+    }
   }
 
   // Close dropdown on outside click
