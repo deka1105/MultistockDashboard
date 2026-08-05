@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Search, X, Clock, TrendingUp, Sun, Moon, Download, SlidersHorizontal } from 'lucide-react'
 import { useSearch, useWebSocketStatus } from '@/hooks/useStockData'
