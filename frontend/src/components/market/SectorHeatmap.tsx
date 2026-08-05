@@ -204,14 +204,14 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
                           {tile.ticker}
                         </text>
                       )}
-                      {showPct && cp != null && (
+                      {showPct && tile.changePct != null && (
                         <text
                           x={r.x + r.w / 2} y={r.y + r.h / 2 + 10}
                           textAnchor="middle"
                           fontSize={Math.min(9, Math.max(6, r.w / 7))}
                           fontFamily="IBM Plex Mono, monospace"
-                          fill={cp >= 0 ? 'rgba(0,232,122,0.9)' : 'rgba(255,60,90,0.9)'}>
-                          {cp >= 0 ? '+' : ''}{cp.toFixed(1)}%
+                          fill={tile.changePct >= 0 ? 'rgba(0,232,122,0.9)' : 'rgba(255,60,90,0.9)'}>
+                          {tile.changePct >= 0 ? '+' : ''}{tile.changePct.toFixed(1)}%
                         </text>
                       )}
                     </g>
