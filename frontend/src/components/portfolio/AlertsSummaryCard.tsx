@@ -170,12 +170,18 @@ export default function AlertsSummaryCard({ portfolioId, defaultTicker }: Props)
                 </>
               )}
 
-              {/* Add more */}
-              <button
-                onClick={() => navigate('/alerts')}
-                className="flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors mt-0.5">
-                <Plus size={10} /> New alert
-              </button>
+              {/* Inline "New alert" creator for the focused holding (10C) */}
+              {defaultTicker ? (
+                <div className="mt-1">
+                  <InlineAlertCreator ticker={defaultTicker} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => navigate('/alerts')}
+                  className="flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-accent-cyan transition-colors mt-0.5">
+                  <Plus size={10} /> New alert
+                </button>
+              )}
             </>
           )}
         </div>

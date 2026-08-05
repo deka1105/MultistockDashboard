@@ -324,7 +324,7 @@ export default function PortfolioPage() {
               }
             </div>
 
-            <AlertsSummaryCard portfolioId={activeId} />
+            <AlertsSummaryCard portfolioId={activeId} defaultTicker={effectiveTicker} />
           </div>
 
           {/* Screener Preview */}
