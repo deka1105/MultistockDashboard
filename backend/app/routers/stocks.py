@@ -214,8 +214,7 @@ async def get_market_overview(request: Request):
 
     quote_tasks   = [fh.get_quote(t)           for t in SP500_TOP50]
     profile_tasks = [fh.get_company_profile(t)  for t in SP500_TOP50]
-    # 1Y series feeds both the latest-day volume and the 1W/1M/YTD period returns
-    candle_tasks  = [fh.get_candles(t, "1Y")    for t in SP500_TOP50]
+    candle_tasks  = [fh.get_candles(t, "1D")    for t in SP500_TOP50]
 
     quotes, profiles, day_candles = await asyncio.gather(
         asyncio.gather(*quote_tasks,   return_exceptions=True),
@@ -232,7 +231,6 @@ async def get_market_overview(request: Request):
         # Volume from most recent candle
         candle_list = c.get("candles", []) if isinstance(c, dict) else []
         volume = candle_list[-1]["volume"] if candle_list else None
-        periods = _period_returns(candle_list)
 
         items.append(MarketOverviewItem(
             ticker=ticker,
@@ -241,9 +239,6 @@ async def get_market_overview(request: Request):
             price=q.get("price"),
             change=q.get("change"),
             change_pct=q.get("change_pct"),
-            change_pct_1w=periods["change_pct_1w"],
-            change_pct_1m=periods["change_pct_1m"],
-            change_pct_ytd=periods["change_pct_ytd"],
             volume=volume,
             market_cap=p.get("market_cap"),
         ))
