@@ -24,26 +24,21 @@ limiter = Limiter(key_func=get_remote_address)
 
 # ─── S&P 500 top 50 ───────────────────────────────────────────────────────────
 
-# Derive the market overview ticker list from the comprehensive TICKER_DB
-# Excludes ETFs for the market overview (keep it to individual stocks)
-from app.services.mock_data import TICKER_DB as _TICKER_DB, _TICKER_INDEX as _TICKER_IDX
-
-# Full stock universe (non-ETF) for market overview
-from app.services.mock_data import TICKER_DB as _TICKER_DB
-
-# Full stock universe (non-ETF) for market overview — 198 stocks
-SP500_TOP50 = [t["ticker"] for t in _TICKER_DB if t["type"] == "Common Stock"]
-
-# Compact alias for correlation heatmaps
-SP50 = [
+# Curated top-50 large caps used by the bulk endpoints (market overview + screener).
+# DELIBERATELY capped at 50, not the full ~200-stock TICKER_DB: each request live-
+# fetches quote + profile + financials + RSI-candles per ticker, and on the 512MB
+# free tier ~200 tickers OOM-kills the instance. 50 keeps it stable while still
+# covering the majors. Concurrency is additionally bounded in yfinance_service.
+SP500_TOP50 = [
     "AAPL","MSFT","NVDA","AMZN","META","GOOGL","TSLA","JPM","V","UNH",
     "XOM","MA","AVGO","JNJ","PG","HD","MRK","COST","ABBV","CVX",
     "KO","PEP","WMT","BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN",
     "MCD","NKE","ADBE","TMO","ABT","TXN","NEE","PM","RTX","QCOM",
     "HON","LIN","IBM","GS","CAT","AMGN","SBUX","INTU","LOW","DE",
 ]
-# Preserve backward compat alias used in correlation heatmaps
-SP50 = SP500_TOP50[:50]
+
+# Alias used by correlation heatmaps
+SP50 = SP500_TOP50
 
 SERIES_COLORS = [
     "#6366f1","#f59e0b","#10b981","#ef4444",
