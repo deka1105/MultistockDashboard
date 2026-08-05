@@ -462,12 +462,14 @@ async def get_portfolio_alerts(
 @router.get("/{portfolio_id}/screener-preview")
 async def get_portfolio_screener_preview(
     portfolio_id: int,
+    preset: str = "high_momentum",
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns top-5 screener results using the 'high_momentum' preset,
-    annotated with which results overlap with portfolio holdings.
-    Runs inline (does not depend on screener router internals).
+    Returns the top-5 enriched screener results for the selected preset (default
+    'high_momentum'), annotated with which results are held in this portfolio.
+    Reuses the screener router's row builder + preset filters so the preview
+    stays in sync with the full screener page (same company/pe/rsi/signal fields).
     """
     await _ensure_guest_user(db)
 
@@ -477,43 +479,30 @@ async def get_portfolio_screener_preview(
         .join(Portfolio)
         .where(Portfolio.user_id == GUEST_ID, Portfolio.id == portfolio_id)
     )
-    positions  = pos_result.scalars().all()
+    positions    = pos_result.scalars().all()
     held_tickers = {p.ticker for p in positions}
 
-    # Fetch live data for SP500_TOP50 (same set screener uses)
-    from app.services import finnhub as fh
-    from app.services.mock_data import get_mock_quote, get_mock_financials
+    from app.routers.screener import build_screener_rows, PRESETS, _apply_filters
 
-    SP50 = [
-        "AAPL","MSFT","NVDA","AMZN","META","GOOGL","TSLA","JPM","V","UNH",
-        "XOM","MA","AVGO","JNJ","PG","HD","MRK","COST","ABBV","CVX",
-        "KO","PEP","WMT","BAC","CRM","NFLX","AMD","ORCL","CSCO","ACN",
-    ]
+    preset_key = preset if preset in PRESETS else "high_momentum"
+    preset_def = PRESETS[preset_key]
 
-    quotes = await asyncio.gather(*[fh.get_quote(t) for t in SP50], return_exceptions=True)
+    rows    = await build_screener_rows()
+    matched = [r for r in rows if _apply_filters(r, preset_def["filters"])]
 
-    rows = []
-    for ticker, q in zip(SP50, quotes):
-        qd = q if isinstance(q, dict) else {}
-        change_pct = qd.get("change_pct") or 0
-        price      = qd.get("price")
-        # High-momentum filter: change_pct > 0 (positive today)
-        if change_pct > 0 and price:
-            rows.append({
-                "ticker":       ticker,
-                "price":        round(price, 2),
-                "change_pct":   round(change_pct, 2),
-                "in_portfolio": ticker in held_tickers,
-            })
+    for r in matched:
+        r["in_portfolio"] = r["ticker"] in held_tickers
 
-    # Sort: portfolio tickers first, then by momentum (highest change_pct)
-    rows.sort(key=lambda x: (not x["in_portfolio"], -x["change_pct"]))
-    top5 = rows[:5]
+    # Portfolio holdings first, then strongest momentum
+    matched.sort(key=lambda x: (not x["in_portfolio"], -(x.get("change_pct") or 0)))
+    top5 = matched[:5]
 
     return {
         "results":       top5,
-        "preset":        "high_momentum",
+        "preset":        preset_key,
+        "preset_name":   preset_def["name"],
+        "presets":       [{"id": k, "name": v["name"]} for k, v in PRESETS.items()],
         "held_tickers":  sorted(held_tickers),
         "overlap_count": sum(1 for r in top5 if r["in_portfolio"]),
-        "total_matches": len(rows),
+        "total_matches": len(matched),
     }
