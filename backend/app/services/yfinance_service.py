@@ -93,7 +93,7 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
         import yfinance as yf
         period, interval = _RANGE_MAP.get(range_key, ("1mo", "1d"))
         t = yf.Ticker(ticker.upper())
-        hist = t.history(period=period, interval=interval, auto_adjust=True)
+        hist = t.history(period=period, interval=interval, auto_adjust=True, timeout=YF_TIMEOUT)
 
         if hist.empty:
             raise ValueError("Empty history")
@@ -116,12 +116,8 @@ async def yf_get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
 
         return {"ticker": ticker.upper(), "range": range_key, "resolution": interval, "candles": candles}
 
-    try:
-        return await asyncio.to_thread(_fetch)
-    except Exception as e:
-        logger.warning(f"yfinance candles failed for {ticker}: {e}")
-        from app.services.mock_data import get_mock_candles
-        return get_mock_candles(ticker, range_key)
+    from app.services.mock_data import get_mock_candles
+    return await _yf_or_mock(_fetch, lambda: get_mock_candles(ticker, range_key), f"candles {ticker}")
 
 
 async def yf_search_symbols(query: str) -> list[dict]:
