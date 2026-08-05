@@ -241,10 +241,13 @@ export default function TopBar() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
             onFocus={() => setOpen(true)}
+            onKeyDown={handleSearchKeyDown}
             aria-label="Search tickers and companies"
             role="combobox"
             aria-expanded={open}
+            aria-controls="search-listbox"
             aria-autocomplete="list"
+            aria-activedescendant={open && items[safeIndex] ? `search-opt-${safeIndex}` : undefined}
             placeholder="Search ticker or company…"
             className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted focus:outline-none"
           />
@@ -256,7 +259,16 @@ export default function TopBar() {
             <span className="text-[10px] font-mono text-text-muted/50 hidden sm:block">⌘K</span>
           )}
         </div>
-        {open && <SearchDropdown query={debouncedQuery} onSelect={handleSelect} />}
+        {open && (
+          <SearchDropdown
+            items={items}
+            isLoading={searchLoading}
+            query={debouncedQuery}
+            activeIndex={safeIndex}
+            onSelect={handleSelect}
+            onHover={setActiveIndex}
+          />
+        )}
       </div>
 
       {/* Right-side action buttons */}
