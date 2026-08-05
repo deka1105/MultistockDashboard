@@ -69,23 +69,32 @@ interface TooltipState {
   y: number
 }
 
-interface SectorHeatmapProps { compact?: boolean }
+interface SectorHeatmapProps {
+  compact?: boolean
+  /** When provided, only these tickers are shown — used by the portfolio command
+   *  centre so the heatmap reflects held positions rather than the full S&P 500. */
+  tickers?: string[]
+}
 
-export default function SectorHeatmap({ compact = false }: SectorHeatmapProps) {
+export default function SectorHeatmap({ compact = false, tickers }: SectorHeatmapProps) {
   const navigate  = useNavigate()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const { data, isLoading }   = useMarketOverview()
 
+  const tickerSet = tickers && tickers.length ? new Set(tickers) : null
+
   // Group tiles by sector, sorted by total market cap descending
   const groups: SectorGroup[] = useMemo(() => {
-    const items: Tile[] = (data?.items ?? []).map((item: any) => ({
-      ticker:    item.ticker,
-      company:   item.company_name,
-      sector:    item.sector ?? 'Other',
-      price:     item.price,
-      changePct: item.change_pct,
-      marketCap: item.market_cap,
-    }))
+    const items: Tile[] = (data?.items ?? [])
+      .filter((item: any) => !tickerSet || tickerSet.has(item.ticker))
+      .map((item: any) => ({
+        ticker:    item.ticker,
+        company:   item.company_name,
+        sector:    item.sector ?? 'Other',
+        price:     item.price,
+        changePct: item.change_pct,
+        marketCap: item.market_cap,
+      }))
 
     const sectorMap = new Map<string, Tile[]>()
     for (const t of items) {
