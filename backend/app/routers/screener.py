@@ -252,62 +252,8 @@ async def run_screener(
     except (json.JSONDecodeError, TypeError):
         filter_list = []
 
-    # Fetch all data in parallel
-    quote_tasks   = [fh.get_quote(t)            for t in SP500_TOP50]
-    profile_tasks = [fh.get_company_profile(t)  for t in SP500_TOP50]
-    fin_tasks     = [fh.get_basic_financials(t) for t in SP500_TOP50]
-    rsi_tasks     = [_get_rsi_for_ticker(t)     for t in SP500_TOP50]
-
-    quotes, profiles, fins, rsis = await asyncio.gather(
-        asyncio.gather(*quote_tasks,   return_exceptions=True),
-        asyncio.gather(*profile_tasks, return_exceptions=True),
-        asyncio.gather(*fin_tasks,     return_exceptions=True),
-        asyncio.gather(*rsi_tasks,     return_exceptions=True),
-    )
-
-    # Build enriched rows
-    rows = []
-    for ticker, q, p, f, rsi in zip(SP500_TOP50, quotes, profiles, fins, rsis):
-        qd = q if isinstance(q, dict) else {}
-        pd = p if isinstance(p, dict) else {}
-        fd = f if isinstance(f, dict) else {}
-
-        row: dict[str, Any] = {
-            "ticker":         ticker,
-            "company_name":   pd.get("company_name"),
-            "sector":         pd.get("sector"),
-            "exchange":       pd.get("exchange"),
-            "price":          qd.get("price"),
-            "change":         qd.get("change"),
-            "change_pct":     qd.get("change_pct"),
-            "market_cap":     pd.get("market_cap"),
-            "pe_ratio":       fd.get("pe_ratio"),
-            "eps":            fd.get("eps"),
-            "beta":           fd.get("beta"),
-            "dividend_yield": fd.get("dividend_yield"),
-            "week_52_high":   fd.get("52_week_high"),
-            "week_52_low":    fd.get("52_week_low"),
-            "rsi":            rsi if not isinstance(rsi, Exception) else None,
-        }
-
-        # Derive analyst signal from RSI + momentum
-        r = row["rsi"]
-        pct = row["change_pct"] or 0
-        if r is not None:
-            if r < 30:
-                row["signal"] = "strong_buy"
-            elif r < 45 and pct > 0:
-                row["signal"] = "buy"
-            elif r > 70:
-                row["signal"] = "sell"
-            elif r > 55 and pct < 0:
-                row["signal"] = "watch"
-            else:
-                row["signal"] = "hold"
-        else:
-            row["signal"] = None
-
-        rows.append(row)
+    # Fetch + assemble enriched rows (shared with the portfolio screener-preview)
+    rows = await build_screener_rows()
 
     # Apply filters
     if filter_list:
