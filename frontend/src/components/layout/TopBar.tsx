@@ -8,7 +8,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 
 // ─── Search Dropdown ─────────────────────────────────────────────────────────
 
-interface SearchItem { ticker: string; description?: string; exchange?: string; recent?: boolean }
+interface SearchItem { ticker: string; description?: string | null; exchange?: string | null; recent?: boolean }
 
 // Presentational: the parent owns the item list + active index so ⌘K search is
 // fully keyboard-operable (↑/↓ to move, Enter to select).
