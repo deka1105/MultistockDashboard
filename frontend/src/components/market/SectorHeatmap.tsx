@@ -73,7 +73,6 @@ interface SectorHeatmapProps { compact?: boolean }
 
 export default function SectorHeatmap({ compact = false }: SectorHeatmapProps) {
   const navigate  = useNavigate()
-  const [view, setView]       = useState<ViewMode>('today')
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const { data, isLoading }   = useMarketOverview()
 
