@@ -3,13 +3,27 @@ import { useNavigate } from 'react-router-dom'
 import { useMarketOverview } from '@/hooks/useStockData'
 import { formatPrice, formatPct, formatMarketCap, cn } from '@/lib/utils'
 
+type ViewMode = 'today' | '1w' | '1m' | 'ytd'
+
 interface Tile {
   ticker: string
   company: string | null
   sector: string | null
   price: number | null
   changePct: number | null
+  changePct1w: number | null
+  changePct1m: number | null
+  changePctYtd: number | null
   marketCap: number | null
+}
+
+const VIEW_LABEL: Record<ViewMode, string> = { today: 'Today', '1w': '1W', '1m': '1M', ytd: 'YTD' }
+
+function tilePct(t: Tile, view: ViewMode): number | null {
+  return view === '1w' ? t.changePct1w
+    : view === '1m' ? t.changePct1m
+    : view === 'ytd' ? t.changePctYtd
+    : t.changePct
 }
 
 interface SectorGroup {
