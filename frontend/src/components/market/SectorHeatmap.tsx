@@ -269,12 +269,17 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
                   <span className="text-text-muted">Price</span>
                   <span className="text-text-primary">{tooltip.tile.price != null ? `$${tooltip.tile.price.toFixed(2)}` : '—'}</span>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-text-muted">Change</span>
-                  <span className={tooltip.tile.changePct != null && tooltip.tile.changePct >= 0 ? 'text-accent-green' : 'text-accent-red'}>
-                    {tooltip.tile.changePct != null ? `${tooltip.tile.changePct >= 0 ? '+' : ''}${tooltip.tile.changePct.toFixed(2)}%` : '—'}
-                  </span>
-                </div>
+                {(() => {
+                  const cp = tilePct(tooltip.tile, view)
+                  return (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-text-muted">{VIEW_LABEL[view]}</span>
+                      <span className={cp != null && cp >= 0 ? 'text-accent-green' : 'text-accent-red'}>
+                        {cp != null ? `${cp >= 0 ? '+' : ''}${cp.toFixed(2)}%` : '—'}
+                      </span>
+                    </div>
+                  )
+                })()}
                 {tooltip.tile.marketCap && (
                   <div className="flex justify-between gap-4">
                     <span className="text-text-muted">Mkt Cap</span>
