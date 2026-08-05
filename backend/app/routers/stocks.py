@@ -204,6 +204,30 @@ async def compare_stocks(
 
 # ─── Market Overview ─────────────────────────────────────────────────────────
 
+def _period_returns(candles: list[dict]) -> dict[str, float | None]:
+    """Compute 1W / 1M / YTD % returns from an ascending daily candle series.
+
+    Uses trading-day offsets (≈5 / ≈21 sessions) rather than calendar days, and
+    anchors YTD to the first session on/after Jan 1 (by timestamp, so it's robust
+    to the candle date-string format)."""
+    closes = [c["close"] for c in candles if c.get("close")]
+    if len(closes) < 2:
+        return {"change_pct_1w": None, "change_pct_1m": None, "change_pct_ytd": None}
+
+    last = closes[-1]
+
+    def pct(base: float | None) -> float | None:
+        return round((last / base - 1) * 100, 2) if base else None
+
+    wk = closes[-6]  if len(closes) >= 6  else closes[0]
+    mo = closes[-22] if len(closes) >= 22 else closes[0]
+
+    jan1 = datetime(datetime.now(timezone.utc).year, 1, 1, tzinfo=timezone.utc).timestamp()
+    ytd_base = next((c["close"] for c in candles if c.get("timestamp", 0) >= jan1 and c.get("close")), closes[0])
+
+    return {"change_pct_1w": pct(wk), "change_pct_1m": pct(mo), "change_pct_ytd": pct(ytd_base)}
+
+
 @router.get("/market/overview", response_model=MarketOverviewResponse)
 @limiter.limit("100/minute")
 async def get_market_overview(request: Request):
