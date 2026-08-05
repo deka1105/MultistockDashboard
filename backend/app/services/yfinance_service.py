@@ -28,6 +28,24 @@ _RANGE_MAP = {
     "5Y": ("5y",  "1wk"),
 }
 
+# A hung/throttled yfinance call must NEVER tie up a worker. Yahoo aggressively
+# rate-limits requests from datacenter IPs (e.g. Render), and a throttled call
+# blocks indefinitely — which stalls the uvicorn worker and, in bulk endpoints
+# (market overview / screener / compare), takes the whole service down with 502s.
+# So every network fetch is bounded by a timeout and degrades to mock data.
+YF_TIMEOUT = 8.0
+
+
+async def _yf_or_mock(fetch, fallback, what: str):
+    """Run a blocking yfinance fetch in a worker thread, bounded by YF_TIMEOUT.
+    On timeout OR any error, fall back to mock data so a slow/throttled Yahoo can
+    never hang the request or saturate the worker pool."""
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(fetch), timeout=YF_TIMEOUT)
+    except Exception as e:
+        logger.warning(f"yfinance {what} unavailable ({type(e).__name__}: {e}); using mock")
+        return fallback()
+
 
 async def yf_get_quote(ticker: str) -> dict[str, Any]:
     """
