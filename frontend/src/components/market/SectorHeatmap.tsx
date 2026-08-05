@@ -93,6 +93,8 @@ interface SectorHeatmapProps {
 export default function SectorHeatmap({ compact = false, tickers }: SectorHeatmapProps) {
   const navigate  = useNavigate()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+  // Compact mode (portfolio widget) is Today-only; the full view exposes the toggle.
+  const [view, setView]       = useState<ViewMode>('today')
   const { data, isLoading }   = useMarketOverview()
 
   // Group tiles by sector, sorted by total market cap descending
@@ -101,12 +103,15 @@ export default function SectorHeatmap({ compact = false, tickers }: SectorHeatma
     const items: Tile[] = (data?.items ?? [])
       .filter((item: any) => !tickerSet || tickerSet.has(item.ticker))
       .map((item: any) => ({
-        ticker:    item.ticker,
-        company:   item.company_name,
-        sector:    item.sector ?? 'Other',
-        price:     item.price,
-        changePct: item.change_pct,
-        marketCap: item.market_cap,
+        ticker:       item.ticker,
+        company:      item.company_name,
+        sector:       item.sector ?? 'Other',
+        price:        item.price,
+        changePct:    item.change_pct,
+        changePct1w:  item.change_pct_1w  ?? null,
+        changePct1m:  item.change_pct_1m  ?? null,
+        changePctYtd: item.change_pct_ytd ?? null,
+        marketCap:    item.market_cap,
       }))
 
     const sectorMap = new Map<string, Tile[]>()
