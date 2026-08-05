@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -8,19 +7,9 @@ import { useAppStore } from '@/store/useAppStore'
 export default function AppShell() {
   const { sidebarCollapsed, toggleSidebar } = useAppStore()
 
-  // Mobile: close sidebar on swipe-left or tap outside overlay
-  useEffect(() => {
-    const handleTouch = (e: TouchEvent) => {
-      const target = e.target as HTMLElement
-      // If sidebar is open and touch starts outside it, close it
-      if (!sidebarCollapsed && !target.closest('aside')) {
-        // Only on mobile widths
-        if (window.innerWidth < 768) toggleSidebar()
-      }
-    }
-    document.addEventListener('touchstart', handleTouch, { passive: true })
-    return () => document.removeEventListener('touchstart', handleTouch)
-  }, [sidebarCollapsed, toggleSidebar])
+  // Tap-outside-to-close on mobile is handled by the overlay backdrop's onClick
+  // below (fires for both mouse and touch). A separate touchstart listener here
+  // double-fired with that click and cancelled the close, so it was removed.
 
   return (
     <>
