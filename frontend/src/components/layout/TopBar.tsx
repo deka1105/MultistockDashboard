@@ -130,6 +130,14 @@ export default function TopBar() {
         navigate('/screener')
         return
       }
+      // Escape → dismiss the search dropdown while it's focused (mirrors the ✕ button).
+      // Gated on the input being active so it never swallows Escape from modals elsewhere.
+      if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        setQuery('')
+        setOpen(false)
+        searchInputRef.current?.blur()
+        return
+      }
 
       if (inInput) return
 
