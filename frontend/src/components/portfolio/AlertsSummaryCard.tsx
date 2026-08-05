@@ -26,7 +26,7 @@ function AlertBadge({ type, threshold }: { type: string; threshold: number | nul
   )
 }
 
-export default function AlertsSummaryCard({ portfolioId }: Props) {
+export default function AlertsSummaryCard({ portfolioId, defaultTicker }: Props) {
   const navigate = useNavigate()
   const { data, isLoading } = usePortfolioAlerts(portfolioId)
 
@@ -68,11 +68,17 @@ export default function AlertsSummaryCard({ portfolioId }: Props) {
             <div className="text-center py-4 space-y-2">
               <Bell size={20} className="text-text-muted mx-auto" />
               <p className="text-[10px] text-text-muted font-mono">No alerts for your holdings</p>
-              <button
-                onClick={() => navigate('/alerts')}
-                className="flex items-center gap-1 mx-auto text-[10px] font-mono text-accent-cyan hover:text-accent-cyan/80 transition-colors">
-                <Plus size={10} /> Create an alert
-              </button>
+              {defaultTicker ? (
+                <div className="flex justify-center pt-1">
+                  <InlineAlertCreator ticker={defaultTicker} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => navigate('/alerts')}
+                  className="flex items-center gap-1 mx-auto text-[10px] font-mono text-accent-cyan hover:text-accent-cyan/80 transition-colors">
+                  <Plus size={10} /> Create an alert
+                </button>
+              )}
             </div>
           ) : (
             <>
