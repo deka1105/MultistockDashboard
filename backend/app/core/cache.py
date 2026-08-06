@@ -82,6 +82,12 @@ def candles_key(ticker: str, resolution: str, from_ts: int, to_ts: int) -> str:
 def news_key(ticker: str) -> str:
     return f"news:{ticker.upper()}"
 
+def profile_key(ticker: str) -> str:
+    return f"profile:{ticker.upper()}"
+
+def financials_key(ticker: str) -> str:
+    return f"financials:{ticker.upper()}"
+
 def search_key(query: str) -> str:
     return f"search:{query.lower()}"
 
