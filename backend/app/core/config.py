@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     cache_ttl_candles: int = 300
     cache_ttl_news: int = 180
     cache_ttl_market_overview: int = 60
+    # Profile & financials change slowly (name/sector/PE/beta); cache long so the
+    # heavy yfinance t.info scrape isn't repeated on every screener/overview load.
+    cache_ttl_profile: int = 1800
+    cache_ttl_financials: int = 1800
 
     # Rate limiting
     rate_limit_default: str = "60/minute"
