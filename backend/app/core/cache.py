@@ -14,11 +14,19 @@ _redis_client: aioredis.Redis | None = None
 async def get_redis() -> aioredis.Redis:
     global _redis_client
     if _redis_client is None:
-        _redis_client = aioredis.from_url(
+        # BOUNDED, BLOCKING pool. Bulk endpoints (screener/overview) issue ~200
+        # concurrent cache ops per request; an unbounded pool opened a connection
+        # for each → blew past the free-tier Redis client cap ("max number of
+        # clients reached") → every cache op failed → nothing cached. Cap the pool
+        # and make callers WAIT for a free connection instead of opening new ones.
+        pool = aioredis.BlockingConnectionPool.from_url(
             settings.redis_url,
             encoding="utf-8",
             decode_responses=True,
+            max_connections=10,
+            timeout=5,  # seconds to wait for a free connection before erroring
         )
+        _redis_client = aioredis.Redis(connection_pool=pool)
     return _redis_client
 
 
