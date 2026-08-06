@@ -18,7 +18,8 @@ from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.core.cache import cache_get, cache_set
+from app.core.cache import cache_get, cache_set, screener_key
+from app.core.config import settings
 from app.routers.stocks import SP500_TOP50
 from app.services import finnhub as fh
 
