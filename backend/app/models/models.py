@@ -232,3 +232,18 @@ class InstitutionalOwnership(Base):
     top_holder_pct:  Mapped[float | None]   = mapped_column(Float, nullable=True)
     raw_json:        Mapped[str | None]     = mapped_column(Text, nullable=True)
     created_at:      Mapped[datetime]       = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PrecomputedSnapshot(Base):
+    """Persistent response cache for expensive bulk endpoints (screener / market
+    overview). Stored in Postgres so it survives worker recycles and doesn't get
+    evicted like the tiny free-tier Redis — endpoints read from here instead of
+    live-fetching ~200 yfinance calls per request. Refreshed by the keep-warm
+    cron; created automatically by Base.metadata.create_all on startup."""
+    __tablename__ = "precomputed_snapshots"
+
+    key:        Mapped[str]      = mapped_column(String(255), primary_key=True)
+    payload:    Mapped[dict]     = mapped_column(JSON, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
