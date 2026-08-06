@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     cache_ttl_candles: int = 300
     cache_ttl_news: int = 180
     cache_ttl_market_overview: int = 60
+    # Screener response cache — longer than the keep-warm cron interval (10 min)
+    # so the cron keeps the default query warm and users get instant loads.
+    cache_ttl_screener: int = 900
     # Profile & financials change slowly (name/sector/PE/beta); cache long so the
     # heavy yfinance t.info scrape isn't repeated on every screener/overview load.
     cache_ttl_profile: int = 1800
