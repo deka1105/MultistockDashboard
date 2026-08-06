@@ -71,8 +71,14 @@ async def _get(path: str, params: dict | None = None) -> dict:
 async def get_quote(ticker: str) -> dict[str, Any]:
     """Real-time quote for a ticker. Uses yfinance when no Finnhub key."""
     if USE_YFINANCE:
+        key = quote_key(ticker)
+        cached = await cache_get(key)
+        if cached:
+            return cached
         from app.services.yfinance_service import yf_get_quote
-        return await yf_get_quote(ticker)
+        result = await yf_get_quote(ticker)
+        await cache_set(key, result, ttl=settings.cache_ttl_quote)
+        return result
 
     key = quote_key(ticker)
     cached = await cache_get(key)
