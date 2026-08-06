@@ -302,5 +302,5 @@ async def run_screener(
         "pages":    max(1, (total + per_page - 1) // per_page),
         "results":  paged,
     }
-    _resp_set(ckey, result)
+    await set_snapshot(db, ckey, result)
     return result
