@@ -280,8 +280,14 @@ async def get_company_profile(ticker: str) -> dict[str, Any]:
 async def get_basic_financials(ticker: str) -> dict[str, Any]:
     """Key financial metrics: 52-week range, P/E, beta, etc."""
     if USE_YFINANCE:
+        key = financials_key(ticker)
+        cached = await cache_get(key)
+        if cached:
+            return cached
         from app.services.yfinance_service import yf_get_basic_financials
-        return await yf_get_basic_financials(ticker)
+        result = await yf_get_basic_financials(ticker)
+        await cache_set(key, result, ttl=settings.cache_ttl_financials)
+        return result
 
     data = await _get("/stock/metric", params={
         "symbol": ticker.upper(),
