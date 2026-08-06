@@ -116,8 +116,14 @@ RESOLUTION_MAP = {
 async def get_candles(ticker: str, range_key: str = "1M") -> dict[str, Any]:
     """OHLCV candle data for a given time range key."""
     if USE_YFINANCE:
+        key = candles_key(ticker, range_key, 0, 0)
+        cached = await cache_get(key)
+        if cached:
+            return cached
         from app.services.yfinance_service import yf_get_candles
-        return await yf_get_candles(ticker, range_key)
+        result = await yf_get_candles(ticker, range_key)
+        await cache_set(key, result, ttl=settings.cache_ttl_candles)
+        return result
 
     resolution, days = RESOLUTION_MAP.get(range_key, ("D", 30))
     now = int(datetime.now(timezone.utc).timestamp())
@@ -245,8 +251,14 @@ def _map_sentiment(raw: str | None) -> str:
 async def get_company_profile(ticker: str) -> dict[str, Any]:
     """Company metadata: name, sector, market cap, logo, etc."""
     if USE_YFINANCE:
+        key = profile_key(ticker)
+        cached = await cache_get(key)
+        if cached:
+            return cached
         from app.services.yfinance_service import yf_get_company_profile
-        return await yf_get_company_profile(ticker)
+        result = await yf_get_company_profile(ticker)
+        await cache_set(key, result, ttl=settings.cache_ttl_profile)
+        return result
 
     data = await _get("/stock/profile2", params={"symbol": ticker.upper()})
     return {
