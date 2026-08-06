@@ -205,11 +205,11 @@ async def compare_stocks(
 
 @router.get("/market/overview", response_model=MarketOverviewResponse)
 @limiter.limit("100/minute")
-async def get_market_overview(request: Request):
-    key = market_overview_key()
-    cached = await cache_get(key)
-    if cached:
-        return cached
+async def get_market_overview(request: Request, db: AsyncSession = Depends(get_db)):
+    # Persistent (Postgres) snapshot — survives worker recycles / Redis eviction.
+    snap = await get_snapshot(db, "market:overview", 900)
+    if snap is not None:
+        return snap
 
     quote_tasks   = [fh.get_quote(t)           for t in SP500_TOP50]
     profile_tasks = [fh.get_company_profile(t)  for t in SP500_TOP50]
@@ -246,8 +246,9 @@ async def get_market_overview(request: Request):
         items=items,
         updated_at=datetime.now(timezone.utc).isoformat(),
     )
-    await cache_set(key, result.model_dump(), ttl=settings.cache_ttl_market_overview)
-    return result
+    payload = result.model_dump()
+    await set_snapshot(db, "market:overview", payload)
+    return payload
 
 
 @router.get("/options/{ticker}")
