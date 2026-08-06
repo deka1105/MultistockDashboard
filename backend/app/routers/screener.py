@@ -254,6 +254,7 @@ async def run_screener(
     sort_dir: str = "desc",
     page: int = 1,
     per_page: int = 25,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Filter SP500_TOP50 by fundamental and technical criteria.
