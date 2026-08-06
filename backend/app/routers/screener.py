@@ -248,6 +248,13 @@ async def run_screener(
     Filter SP500_TOP50 by fundamental and technical criteria.
     filters: JSON-encoded list, e.g. [{"field":"pe_ratio","operator":"lt","value":30}]
     """
+    # Serve from the response cache when available — the row build is ~200 live
+    # yfinance calls, so this is what makes repeat/cron-warmed loads instant.
+    ckey = screener_key(filters, sort_by, sort_dir, page, per_page)
+    cached = await cache_get(ckey)
+    if cached:
+        return cached
+
     try:
         filter_list: list[dict] = json.loads(filters)
     except (json.JSONDecodeError, TypeError):
