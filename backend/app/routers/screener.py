@@ -268,11 +268,12 @@ async def run_screener(
     Filter SP500_TOP50 by fundamental and technical criteria.
     filters: JSON-encoded list, e.g. [{"field":"pe_ratio","operator":"lt","value":30}]
     """
-    # Serve from the response cache when available — the row build is ~200 live
-    # yfinance calls, so this is what makes repeat/cron-warmed loads instant.
+    # Serve from the in-memory response cache when available — the row build is
+    # ~200 live yfinance calls, so this is what makes repeat/cron-warmed loads
+    # instant (and it survives the free-tier Redis evicting per-ticker keys).
     ckey = screener_key(filters, sort_by, sort_dir, page, per_page)
-    cached = await cache_get(ckey)
-    if cached:
+    cached = _resp_get(ckey)
+    if cached is not None:
         return cached
 
     try:
