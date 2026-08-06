@@ -310,5 +310,5 @@ async def run_screener(
         "pages":    max(1, (total + per_page - 1) // per_page),
         "results":  paged,
     }
-    await cache_set(ckey, result, ttl=settings.cache_ttl_screener)
+    _resp_set(ckey, result)
     return result
