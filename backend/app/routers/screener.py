@@ -35,24 +35,11 @@ limiter = Limiter(key_func=get_remote_address)
 RSI_CACHE_TTL = 300   # 5 min
 RSI_PERIOD    = 14
 
-# In-process response cache for the (expensive) screener build. The free-tier
-# Redis is tiny and silently evicts keys under the ~200 per-ticker writes each
-# rebuild does, so a Redis response cache doesn't survive. An in-memory TTL cache
-# is immune to that (and to Redis connection limits), and the keep-warm cron
-# refreshes it, so real users get instant loads. Cleared on process restart.
-_RESP_CACHE: dict[str, tuple[float, dict]] = {}
-_RESP_TTL = 900   # 15 min — longer than the 10-min keep-warm cron so it stays warm
-
-def _resp_get(key: str) -> dict | None:
-    hit = _RESP_CACHE.get(key)
-    if hit and hit[0] > time.time():
-        return hit[1]
-    return None
-
-def _resp_set(key: str, value: dict) -> None:
-    if len(_RESP_CACHE) > 100:      # bound memory: drop everything if it grows
-        _RESP_CACHE.clear()
-    _RESP_CACHE[key] = (time.time() + _RESP_TTL, value)
+# The screener build is ~200 live yfinance calls, far too slow to run per request.
+# We persist the computed response in Postgres (see snapshot_cache) — it survives
+# worker recycles and doesn't evict like the tiny free-tier Redis — and the
+# keep-warm cron refreshes it, so real users read a cached row instantly.
+_SNAPSHOT_TTL = 900   # 15 min — longer than the 10-min keep-warm cron so it stays warm
 
 
 # ─── RSI calculation (Python port of frontend logic) ─────────────────────────
