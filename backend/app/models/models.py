@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import (
-    String, Float, Integer, Boolean, DateTime, ForeignKey, Text, Enum as SAEnum
+    String, Float, Integer, Boolean, DateTime, ForeignKey, Text, JSON, Enum as SAEnum
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
