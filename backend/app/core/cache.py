@@ -102,5 +102,9 @@ def search_key(query: str) -> str:
 def market_overview_key() -> str:
     return "market:overview"
 
+def screener_key(filters: str, sort_by: str, sort_dir: str, page: int, per_page: int) -> str:
+    fh = hashlib.md5(filters.encode()).hexdigest()[:10]
+    return f"screener:{fh}:{sort_by}:{sort_dir}:{page}:{per_page}"
+
 def sentiment_key(ticker: str, window: int = 24) -> str:
     return f"sentiment:{ticker.upper()}:{window}h"
