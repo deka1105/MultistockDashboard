@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.cache import (
     cache_get, cache_set,
     quote_key, candles_key, news_key, search_key,
+    profile_key, financials_key,
 )
 
 logger = logging.getLogger(__name__)
